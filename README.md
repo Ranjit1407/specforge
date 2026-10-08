@@ -1,20 +1,95 @@
 # SpecForge
 
-Generates a Functional Requirements Document (FRD) from any set of source documents (BRDs, meeting notes, emails, specs, RFPs) using a chain of LLM agents over a hybrid RAG index. It is domain-agnostic: modules, user roles, search queries and requirements all come from the documents you upload. Runs on free models through OpenRouter.
+SpecForge generates a Functional Requirements Document (FRD) from any set of source documents (BRDs, meeting notes, emails, specs, RFPs) using a chain of LLM agents over a hybrid RAG index. It is domain-agnostic: modules, user roles, search queries and requirements all come from the documents you provide. It runs on free models through OpenRouter.
 
-## Quick start
+Current version: **1.2.0**. See [CHANGELOG.md](CHANGELOG.md) for release history.
+
+## Contents
+
+- [Features](#features)
+- [Installation and setup](#installation-and-setup)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [How it works](#how-it-works)
+- [Project structure](#project-structure)
+- [Prompt management](#prompt-management)
+- [Git workflow](#git-workflow)
+- [Development and contribution guidelines](#development-and-contribution-guidelines)
+- [Free-tier limits and runtime notes](#free-tier-limits-and-runtime-notes)
+
+## Features
+
+- **Any input shape**: a single file, several files, folders and nested subfolders (`.pdf`, `.docx`, `.md`, `.txt`), from the web UI or the CLI, with validation, deduplication and a per-file status report.
+- **Seven-agent pipeline**: reader, scope analyst, per-module requirements extractor, coverage sweep, reviewer, refiner and writer.
+- **Grounded and traceable**: every requirement cites the source passages it came from, and the FRD ends with a traceability matrix.
+- **Structured output**: requirements with IDs, priorities (Must, Should, Could), actors, inputs and outputs, business rules and acceptance criteria, plus open questions for stakeholders.
+- **Exports**: Word (`FRD.docx`), Markdown (`FRD.md`) and JSON (`frd.json`).
+- **Web UI**: drag-and-drop or folder upload, live progress, a Stop button, and an FRD preview with downloads.
+- **Resilient on free models**: model fallback, exponential backoff and an on-disk cache, so interrupted runs resume.
+- **Managed prompts**: every prompt is a versioned file with documented history (see [Prompt management](#prompt-management)).
+
+## Installation and setup
+
+Requirements: Python 3.11 or newer, Git, and an OpenRouter API key (free at openrouter.ai).
+
+Windows (PowerShell):
 
 ```powershell
+git clone <repository-url> SpecForge
+cd SpecForge
 python -m venv .venv
 .\.venv\Scripts\pip install -r requirements.txt
-copy .env.example .env   # then put your OpenRouter key in .env
-
-.\.venv\Scripts\python -m specforge.web     # web UI at http://127.0.0.1:8000
+copy .env.example .env      # then put your OpenRouter key in .env
+.\.venv\Scripts\python -m specforge --version
 ```
+
+macOS or Linux:
+
+```bash
+git clone <repository-url> SpecForge
+cd SpecForge
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+cp .env.example .env        # then put your OpenRouter key in .env
+.venv/bin/python -m specforge --version
+```
+
+The first run downloads the embedding model (about 67 MB) into `.cache/`. Use `--no-dense` to skip it and use keyword search only.
+
+## Configuration
+
+Settings are read from `.env` in the project root. `.env` is git-ignored; `.env.example` is the committed template. Never put keys in code, prompts or committed files.
+
+| Variable | Required | Meaning |
+| --- | --- | --- |
+| `OPENROUTER_API_KEY` | Yes | Your OpenRouter API key |
+| `PRIMARY_MODEL` | No | OpenRouter model ID tried first (default `google/gemma-4-31b-it:free`) |
+| `FALLBACK_MODEL` | No | Comma-separated model IDs tried in order when the primary fails or is rate-limited |
+
+Example:
+
+```ini
+OPENROUTER_API_KEY=sk-or-v1-...
+PRIMARY_MODEL=qwen/qwen3.8-27b:free
+FALLBACK_MODEL=google/gemma-4-31b-it:free,nvidia/nemotron-3-super-120b-a12b:free
+```
+
+Pipeline defaults (passage size, retrieval depth, context budget, retries, cache) are in [specforge/config.py](specforge/config.py), and the most useful ones can be overridden per run with CLI options.
+
+## Usage
+
+### Web UI
+
+```powershell
+.\.venv\Scripts\python -m specforge.web               # http://127.0.0.1:8000
+.\.venv\Scripts\python -m specforge.web --port 8080   # another port
+```
+
+The server listens on this computer only. `--host 0.0.0.0` makes it reachable from your network, but it has no login, so use that only on a trusted network.
 
 In the web UI, drop in files or whole folders (or use **Select a folder**), optionally name the project, and click **Generate FRD**. You can watch each agent's progress live, then preview the FRD and download it as Word, Markdown or JSON.
 
-### Inputs
+### Command line
 
 SpecForge accepts a single file, several files, a folder, nested subfolders, or any mix of these. The web UI and the CLI feed the same pipeline, so the same inputs give the same results.
 
@@ -45,6 +120,8 @@ Every file found gets a record with its relative path (for example `project-docs
 - **failed**: could not be used (empty, unreadable, corrupt, password-protected, or a PDF with no text layer). The rest of the files are still processed.
 
 Hidden files and folders (`.git`, `.DS_Store`) and Office lock files (`~$name.docx`) are ignored. A path that does not exist stops the run before anything is processed. The per-file results appear in the CLI output, on the result page, in the FRD's appendices (Appendix B lists files not included) and in `frd.json` under `files`. The run fails only when no file at all can be read.
+
+Run `.\.venv\Scripts\python -m specforge --help` for the full option list.
 
 ## How it works
 
@@ -78,6 +155,36 @@ Techniques used:
 - **Critique and refine.** The Reviewer flags problems and only the flagged requirements are rewritten. Conflicts between sources become open questions instead of being decided silently.
 - **Deterministic rendering.** The LLM produces content, and code builds the document layout, IDs and tables.
 - **Resilience on free tiers.** Primary/fallback models with exponential backoff on 429s, plus an on-disk cache of validated replies so an interrupted run resumes without spending requests again.
+
+## Project structure
+
+```
+SpecForge/
+├── specforge/
+│   ├── __init__.py          package version
+│   ├── __main__.py          CLI: python -m specforge
+│   ├── web.py               FastAPI server, job queue and downloads: python -m specforge.web
+│   ├── static/index.html    web UI (one file, vanilla JavaScript, no build step)
+│   ├── pipeline.py          runs the eight stages and writes the outputs
+│   ├── ingest.py            input collection, validation, text extraction and chunking
+│   ├── retriever.py         hybrid BM25 + embedding search fused with RRF
+│   ├── agents.py            the seven agents
+│   ├── prompts.py           prompt catalog loader and CLI: python -m specforge.prompts
+│   ├── llm.py               OpenRouter client: fallback, backoff, JSON repair, cache, cancellation
+│   ├── models.py            Pydantic schemas for the FRD and its parts
+│   ├── render.py            Word and Markdown rendering
+│   └── config.py            settings and .env loading
+├── prompts/
+│   ├── runtime/             prompts sent to the model, one folder per prompt, one file per version
+│   └── development/         requests that built the project, versioned the same way
+├── requirements.txt
+├── .env.example             configuration template (copy to .env)
+├── .gitignore, .gitattributes
+├── CHANGELOG.md
+└── README.md
+```
+
+Created at run time and git-ignored: `.env`, `.venv/`, `.cache/` (embedding model and cached model replies), `runs/` (web jobs: uploads and results), `output/` (CLI results).
 
 ## Prompt management
 
@@ -984,7 +1091,97 @@ The existing project should have a proper Git version-control structure, a maint
 
 <!-- END GENERATED: prompt catalog -->
 
-## Free-tier limits
+## Git workflow
+
+### Repository setup
+
+The project is a Git repository on the `main` branch, with tagged releases (`v1.0.0`, `v1.1.0`, `v1.2.0`). To publish it, create an empty repository on your Git host and run:
+
+```bash
+git remote add origin https://github.com/<user>/<repo>.git
+git push -u origin main --tags
+```
+
+### What is never committed
+
+`.gitignore` excludes secrets (`.env` and every `.env.*` except `.env.example`, key and credential files), the virtual environment, Python caches, run-time data (`.cache/`, `runs/`, `output/`, logs) and editor or OS files. `.gitattributes` stores text with LF line endings and treats Word and PDF files as binary.
+
+- Check that a file is ignored: `git check-ignore -v .env`
+- Review what you are about to commit: `git status` and `git diff --staged`
+- `python -m specforge.prompts check` also fails if a prompt file contains something that looks like an API key.
+- If a secret is ever committed, revoke and rotate it at the provider first. Removing it from history does not recall copies that were already pushed or cloned.
+
+### Branches
+
+- `main` is always runnable. Releases are tagged on it.
+- Do work on short-lived branches: `feature/<topic>`, `fix/<topic>`, `docs/<topic>`, or `prompt/<prompt-id>-v<version>` for prompt changes.
+- Merge back with a pull request, or locally with `git merge --no-ff <branch>`, after the checks in [Development and contribution guidelines](#development-and-contribution-guidelines) pass.
+
+### Commit messages
+
+- Make one logical change per commit, so it can be reviewed and reverted on its own.
+- Subject: an imperative summary of up to about 72 characters, for example `Accept files, folders and nested folders with per-file tracking`.
+- Body: what changed and why, wrapped at about 72 characters.
+- Prompt changes: start the subject with `prompt(<id>): v<version>`, for example `prompt(reviewer): v1.1.0 flag unmeasurable performance terms`, and commit the new prompt file together with the regenerated README.
+- Releases: `Release X.Y.Z`.
+
+### Versioning
+
+The application follows semantic versioning (MAJOR.MINOR.PATCH). The version lives in [specforge/__init__.py](specforge/__init__.py) and is shown by `python -m specforge --version`.
+
+- **MAJOR**: incompatible changes to CLI options, web API endpoints, the `frd.json` structure or configuration variables.
+- **MINOR**: new, backward-compatible functionality.
+- **PATCH**: backward-compatible bug fixes.
+
+Prompts have their own versions, described in [Changing a prompt](#changing-a-prompt).
+
+To make a release:
+
+```bash
+# 1. update __version__ in specforge/__init__.py and add a section to CHANGELOG.md
+git add specforge/__init__.py CHANGELOG.md
+git commit -m "Release 1.3.0"
+git tag -a v1.3.0 -m "SpecForge 1.3.0: <one-line summary>"
+git push origin main --tags
+```
+
+### Common commands
+
+| Task | Command |
+| --- | --- |
+| See what changed | `git status`, `git diff`, `git diff --staged` |
+| Stage and commit | `git add <files>`, then `git commit` |
+| History | `git log --oneline --decorate --graph` |
+| History of one prompt | `git log --oneline -- prompts/runtime/reviewer/` |
+| Start a branch | `git switch -c feature/<topic>` |
+| Switch branch | `git switch main` |
+| Merge a branch | `git switch main`, then `git merge --no-ff feature/<topic>` |
+| Update from the remote | `git pull --rebase` |
+| Publish a branch | `git push -u origin feature/<topic>` |
+| List and inspect releases | `git tag -n`, `git show v1.1.0` |
+| Compare two releases | `git diff v1.1.0 v1.2.0 --stat` |
+| Undo a commit safely | `git revert <commit>` (adds a new commit; history is kept) |
+| Set work aside | `git stash -u`, later `git stash pop` |
+
+## Development and contribution guidelines
+
+1. Set up the environment as in [Installation and setup](#installation-and-setup) and create a branch for your change.
+2. Follow the existing conventions:
+   - Python 3.11+ with type hints and the standard library first.
+   - Do not add a dependency without a clear need. When you do, add it to `requirements.txt` with a minimum version.
+   - Prompt text belongs only in `prompts/`. Code refers to prompts by id.
+   - Settings belong in `config.py` or `.env`. Credentials are never hardcoded.
+   - Messages shown to users are plain language, without stack traces, model names or raw API errors.
+   - The web UI stays a single static file with no build step. Keep dark mode and the narrow-screen layout working.
+3. Check your change before committing. There is no automated test suite yet, so use these:
+   - `python -m specforge.prompts check` validates prompts and the README catalog.
+   - `python -m specforge <folder-with-test-documents> --check` checks input collection and text extraction without calling the model.
+   - A real run on a small document set (`python -m specforge <docs> -o output/test`) exercises the agents. It uses free-tier requests, and replies are cached, so rerunning the same input is fast and free.
+   - For web UI changes, run `python -m specforge.web` and try the flow in a browser: upload, progress, Stop, result and downloads.
+4. Update the documentation in the same change: this README, `CHANGELOG.md` for user-visible changes, and `sync-readme` for prompt changes.
+5. Commit following [Commit messages](#commit-messages) and open a pull request that describes the change, how you checked it, and any prompt versions it introduces.
+
+## Free-tier limits and runtime notes
 
 OpenRouter free models allow 50 requests per day (1,000 per day once the account has $10 of credit). A typical run makes roughly 8 to 15 calls. When every model is rate-limited, the client backs off before giving up; retrying resumes from cached steps.
 

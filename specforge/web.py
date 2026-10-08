@@ -13,6 +13,7 @@ from pathlib import Path
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 
+from . import __version__
 from .config import Settings
 from .ingest import SUPPORTED, is_hidden
 from .llm import Cancelled, LLMError
@@ -74,7 +75,7 @@ class JobLogHandler(logging.Handler):
 jobs: dict[str, Job] = {}
 # One job at a time: free-tier models are rate-limited per account, so parallel runs only slow each other down.
 executor = ThreadPoolExecutor(max_workers=1)
-app = FastAPI(title="SpecForge")
+app = FastAPI(title="SpecForge", version=__version__)
 
 
 TERMINAL = ("done", "error", "cancelled")

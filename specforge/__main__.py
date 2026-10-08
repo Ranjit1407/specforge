@@ -7,6 +7,7 @@ from rich.console import Console
 from rich.logging import RichHandler
 from rich.table import Table
 
+from . import __version__
 from .config import Settings
 from .ingest import DEDUP_POLICIES, SUPPORTED, InputError, chunk_documents, collect_inputs
 from .llm import LLMError
@@ -56,6 +57,7 @@ def main() -> None:
     p.add_argument("--top-k", type=int, help="passages retrieved per search query (default: 6)")
     p.add_argument("--no-dense", action="store_true", help="keyword (BM25) retrieval only; skips the embedding model")
     p.add_argument("--no-cache", action="store_true", help="ignore cached LLM replies")
+    p.add_argument("--version", action="version", version=f"SpecForge {__version__}")
     args = p.parse_args()
 
     settings = Settings(use_dense=not args.no_dense, use_cache=not args.no_cache, dedup=args.dedup)
