@@ -23,6 +23,7 @@ class Settings:
     cache_dir: Path = Path(__file__).resolve().parent.parent / ".cache"
     use_cache: bool = True
     use_dense: bool = True
+    dedup: str = "content"
     chunk_words: int = 220
     chunk_overlap: int = 40
     top_k: int = 6

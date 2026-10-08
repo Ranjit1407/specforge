@@ -77,7 +77,18 @@ def build_blocks(frd: FRD, chunk_cites: dict[str, str]) -> list[Block]:
         [r.id, r.title, r.priority, _sources(r, chunk_cites)] for r in frd.requirements]))
 
     b.append(Block("heading", "Appendix A. Source Documents", 1))
-    b.append(Block("table", headers=["ID", "Document"], items=[[k, v] for k, v in frd.sources.items()]))
+    processed = [f for f in frd.files if f.status == "processed"]
+    if processed:
+        b.append(Block("table", headers=["ID", "Document", "Type", "Passages"],
+                       items=[[f.doc_id, f.path, f.type, str(f.passages)] for f in processed]))
+    else:
+        b.append(Block("table", headers=["ID", "Document"], items=[[k, v] for k, v in frd.sources.items()]))
+    excluded = [f for f in frd.files if f.status in ("skipped", "duplicate", "failed")]
+    if excluded:
+        b.append(Block("heading", "Appendix B. Files Not Included", 1))
+        b.append(Block("para", "These input files were not used to build this document."))
+        b.append(Block("table", headers=["File", "Status", "Reason"],
+                       items=[[f.path, f.status.capitalize(), f.reason] for f in excluded]))
     return b
 
 

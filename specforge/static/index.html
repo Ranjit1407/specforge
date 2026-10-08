@@ -114,7 +114,15 @@
   .drop .link { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
   .drop small { color: var(--muted); font-size: 13px; }
 
-  .files { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; }
+  .files { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; max-height: 420px; overflow-y: auto; }
+  .files:empty { display: none; }
+  .file-name .dir { color: var(--muted); font-weight: 400; }
+  .pick-row { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; margin-top: 12px; font-size: 13.5px; }
+  .btn.sm { height: 34px; padding: 0 14px; font-size: 13.5px; }
+  .alert ul { margin: 6px 0 0; padding-left: 18px; }
+  .status-tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .status-tag.failed { background: var(--error-soft); color: var(--error); }
+  .status-tag.skipped, .status-tag.duplicate { background: var(--warn-soft); color: var(--warn); }
   .file { display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
   .ftype { flex: none; width: 40px; height: 40px; border-radius: 8px; display: grid; place-items: center; font: 700 10.5px/1 var(--font); letter-spacing: .03em; }
   .ftype.pdf { background: var(--error-soft); color: var(--error); }
@@ -307,10 +315,15 @@
             <div class="drop-icon">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M20 15v3.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5V15"/></svg>
             </div>
-            <strong>Drag and drop files, or <span class="link">browse</span></strong>
+            <strong>Drag and drop files or folders, or <span class="link">browse</span></strong>
             <small id="drop-hint">PDF, Word, Markdown or plain text</small>
           </div>
           <input type="file" id="file-input" multiple hidden>
+          <input type="file" id="folder-input" webkitdirectory multiple hidden>
+          <div class="pick-row">
+            <span class="muted">Folders are scanned including subfolders.</span>
+            <button class="btn sm" id="pick-folder" type="button">Select a folder</button>
+          </div>
           <ul class="files" id="file-list" aria-label="Selected documents"></ul>
           <div id="upload-errors" hidden></div>
 
@@ -322,6 +335,7 @@
           <div class="form-actions">
             <button class="btn primary lg" id="generate" type="button" disabled>Generate FRD</button>
             <span class="muted" id="file-summary">No documents selected</span>
+            <button class="btn sm" id="clear-files" type="button" hidden>Clear all</button>
           </div>
         </div>
 
@@ -401,6 +415,7 @@
           </div>
           <div class="result-actions" id="downloads"></div>
         </div>
+        <div id="result-notice" hidden></div>
         <div class="kpis" id="kpis"></div>
       </div>
     </div>
@@ -466,51 +481,99 @@
   }
 
   // ---------- Upload ----------
-  function addFiles(list) {
-    const { accept, max_files, max_file_mb } = state.config;
-    const errors = [];
-    for (const file of list) {
-      if (!accept.includes(ext(file.name))) errors.push(`${file.name} is not a supported file type.`);
-      else if (file.size > max_file_mb * 1048576) errors.push(`${file.name} is larger than ${max_file_mb} MB.`);
-      else if (file.size === 0) errors.push(`${file.name} is empty.`);
-      else if (state.files.some((f) => f.name === file.name && f.size === file.size)) continue;
-      else if (state.files.length >= max_files) { errors.push(`You can upload up to ${max_files} documents.`); break; }
-      else state.files.push(file);
+  // Each selected file is kept with its path relative to what the user picked, e.g. "Specs/Billing/rules.pdf".
+  const isHidden = (path) => path.split("/").some((part) => part.startsWith(".") || part.startsWith("~$"));
+  const fromFileList = (list) => [...list].map((file) => ({ file, path: file.webkitRelativePath || file.name }));
+
+  async function fromDrop(dataTransfer) {
+    // Entries must be read synchronously inside the drop event; the walk below can then be async.
+    const roots = [...dataTransfer.items].map((item) => item.webkitGetAsEntry && item.webkitGetAsEntry()).filter(Boolean);
+    if (!roots.length) return { entries: fromFileList(dataTransfer.files), unreadable: [] };
+    const entries = [], unreadable = [];
+    async function walk(entry, prefix) {
+      const path = prefix + entry.name;
+      if (entry.isFile) {
+        try { entries.push({ file: await new Promise((ok, fail) => entry.file(ok, fail)), path }); }
+        catch { unreadable.push(path); }
+      } else if (entry.isDirectory) {
+        const reader = entry.createReader();
+        for (;;) {
+          let batch;
+          try { batch = await new Promise((ok, fail) => reader.readEntries(ok, fail)); }
+          catch { unreadable.push(`${path}/`); break; }
+          if (!batch.length) break;
+          for (const child of batch) await walk(child, `${path}/`);
+        }
+      }
     }
-    showUploadErrors(errors);
+    for (const root of roots) await walk(root, "");
+    return { entries, unreadable };
+  }
+
+  function addFiles(entries, unreadable = []) {
+    const { accept, max_files, max_file_mb, max_total_mb } = state.config;
+    const errors = unreadable.map((path) => `${path} could not be read by the browser.`);
+    const unsupported = [], empty = [];
+    let total = state.files.reduce((sum, f) => sum + f.file.size, 0);
+    for (const entry of entries) {
+      const { file, path } = entry;
+      if (isHidden(path)) continue;
+      if (!accept.includes(ext(file.name))) unsupported.push(path);
+      else if (file.size === 0) empty.push(path);
+      else if (file.size > max_file_mb * 1048576) errors.push(`${path} is larger than ${max_file_mb} MB.`);
+      else if (state.files.some((f) => f.path === path && f.file.size === file.size)) continue;
+      else if (state.files.length >= max_files) { errors.push(`You can upload up to ${max_files} documents at a time.`); break; }
+      else if (total + file.size > max_total_mb * 1048576) { errors.push(`The upload can be at most ${max_total_mb} MB in total.`); break; }
+      else { state.files.push(entry); total += file.size; }
+    }
+    const warnings = [];
+    const names = (list) => list.slice(0, 5).join(", ") + (list.length > 5 ? ` and ${list.length - 5} more` : "");
+    if (unsupported.length) warnings.push(`${plural(unsupported.length, "file")} skipped because the type is not supported: ${names(unsupported)}.`);
+    if (empty.length) warnings.push(`${plural(empty.length, "empty file")} skipped: ${names(empty)}.`);
+    showUploadErrors(errors, warnings);
     renderFiles();
   }
 
-  function showUploadErrors(errors) {
+  function showUploadErrors(errors, warnings = []) {
     const box = $("upload-errors");
-    box.replaceChildren(...(errors.length ? [alertBox("error", errors.length > 1 ? "Some files were not added" : "",
-      errors.length > 1 ? el("ul", {}, errors.map((e) => el("li", {}, e))) : errors[0])] : []));
-    box.hidden = errors.length === 0;
+    const group = (kind, title, items) => items.length
+      ? [alertBox(kind, items.length > 1 ? title : "", items.length > 1 ? el("ul", {}, items.map((e) => el("li", {}, e))) : items[0])]
+      : [];
+    box.replaceChildren(...group("error", "Some files were not added", errors), ...group("warn", "Some files were skipped", warnings));
+    box.hidden = !errors.length && !warnings.length;
   }
 
   function renderFiles() {
-    $("file-list").replaceChildren(...state.files.map((file, i) => {
+    $("file-list").replaceChildren(...state.files.map(({ file, path }, i) => {
       const type = ext(file.name).slice(1);
+      const slash = path.lastIndexOf("/");
       return el("li", { class: "file" },
         el("span", { class: `ftype ${type}`, "aria-hidden": "true" }, type.toUpperCase()),
         el("div", { class: "file-meta" },
-          el("div", { class: "file-name", title: file.name }, file.name),
+          el("div", { class: "file-name", title: path }, slash >= 0 ? el("span", { class: "dir" }, path.slice(0, slash + 1)) : "", path.slice(slash + 1)),
           el("div", { class: "file-size" }, formatSize(file.size))),
-        el("button", { class: "icon-btn", type: "button", "aria-label": `Remove ${file.name}`,
-          onclick: () => { state.files.splice(i, 1); renderFiles(); } }, "✕"));
+        el("button", { class: "icon-btn", type: "button", "aria-label": `Remove ${path}`,
+          onclick: () => { state.files.splice(i, 1); renderFiles(); } }, "\u2715"));
     }));
-    const total = state.files.reduce((s, f) => s + f.size, 0);
-    $("file-summary").textContent = state.files.length ? `${plural(state.files.length, "document")} · ${formatSize(total)}` : "No documents selected";
+    const total = state.files.reduce((sum, f) => sum + f.file.size, 0);
+    $("file-summary").textContent = state.files.length ? `${plural(state.files.length, "document")} \u00b7 ${formatSize(total)}` : "No documents selected";
     $("generate").disabled = state.files.length === 0;
+    $("clear-files").hidden = state.files.length < 2;
   }
 
-  const drop = $("drop"), input = $("file-input");
+  const drop = $("drop"), input = $("file-input"), folderInput = $("folder-input");
   drop.addEventListener("click", () => input.click());
   drop.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); input.click(); } });
-  input.addEventListener("change", () => { addFiles(input.files); input.value = ""; });
+  input.addEventListener("change", () => { addFiles(fromFileList(input.files)); input.value = ""; });
+  $("pick-folder").addEventListener("click", () => folderInput.click());
+  folderInput.addEventListener("change", () => { addFiles(fromFileList(folderInput.files)); folderInput.value = ""; });
+  $("clear-files").addEventListener("click", () => { state.files = []; showUploadErrors([]); renderFiles(); });
   for (const type of ["dragenter", "dragover"]) drop.addEventListener(type, (e) => { e.preventDefault(); drop.classList.add("over"); });
   for (const type of ["dragleave", "drop"]) drop.addEventListener(type, (e) => { e.preventDefault(); drop.classList.remove("over"); });
-  drop.addEventListener("drop", (e) => addFiles(e.dataTransfer.files));
+  drop.addEventListener("drop", async (e) => {
+    const { entries, unreadable } = await fromDrop(e.dataTransfer);
+    addFiles(entries, unreadable);
+  });
   // Stop the browser from navigating away when a file is dropped outside the drop zone.
   window.addEventListener("dragover", (e) => e.preventDefault());
   window.addEventListener("drop", (e) => e.preventDefault());
@@ -522,11 +585,14 @@
     button.textContent = "Uploading…";
     const title = $("title").value.trim();
     const form = new FormData();
-    for (const file of state.files) form.append("files", file);
+    for (const { file, path } of state.files) {
+      form.append("files", file, path);
+      form.append("paths", path);
+    }
     form.append("title", title);
     try {
       const { id } = await api("/api/jobs", { method: "POST", body: form });
-      startJob(id, Date.now() / 1000, title, state.files.map((f) => f.name));
+      startJob(id, Date.now() / 1000, title, state.files.map((f) => f.path));
     } catch (err) {
       show("upload");
       showUploadErrors([err.message]);
@@ -546,7 +612,8 @@
     state.finished = false;
     history.replaceState(null, "", `#job=${id}`);
     $("progress-title").textContent = title ? `Analysing documents for ${title}` : "Analysing your documents";
-    $("progress-files").textContent = `${plural(files.length, "document")}: ${files.join(", ")}`;
+    const shown = files.slice(0, 4).join(", ") + (files.length > 4 ? ` and ${files.length - 4} more` : "");
+    $("progress-files").textContent = `${plural(files.length, "file")}: ${shown}`;
     $("run-error").hidden = $("run-actions").hidden = $("busy").hidden = true;
     $("retry").hidden = state.files.length === 0;
     $("retry").textContent = "Try again";
@@ -739,6 +806,19 @@
     const docCount = Object.keys(frd.sources).length;
     $("result-title").textContent = ctx.title;
     $("result-sub").textContent = `Generated ${new Date(job.created * 1000).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" })} from ${plural(docCount, "source document")}`;
+    const files = frd.files || [];
+    const processed = files.filter((f) => f.status === "processed");
+    const excluded = files.filter((f) => f.status !== "processed");
+    const failed = excluded.filter((f) => f.status === "failed");
+    const notice = [];
+    if (excluded.length) {
+      const counts = ["failed", "skipped", "duplicate"].map((s) => [s, excluded.filter((f) => f.status === s).length]).filter(([, n]) => n);
+      const parts = counts.map(([s, n]) => s === "failed" ? `${n} could not be read` : s === "skipped" ? `${n} skipped as unsupported` : `${plural(n, "duplicate")} left out`);
+      notice.push(alertBox(failed.length ? "error" : "warn", `${plural(excluded.length, "file")} not included`,
+        el("span", {}, `${parts.join(", ")}. `, el("a", { href: "#sec-files" }, "See the list"), ".")));
+    }
+    $("result-notice").replaceChildren(...notice);
+    $("result-notice").hidden = !notice.length;
 
     const link = (fmt, label, primary) => el("a", { class: `btn${primary ? " primary" : ""}`, href: `/api/jobs/${job.id}/download/${fmt}`, download: true }, label);
     $("downloads").replaceChildren(
@@ -762,7 +842,8 @@
       navLink("sec-requirements", "4. Requirements", reqs.length),
       modules.map((m) => navLink(m.anchor, m.name, m.items.length, true)),
       navLink("sec-questions", "5. Open questions", frd.open_questions.length),
-      navLink("sec-sources", "6. Source documents"));
+      navLink("sec-sources", "6. Source documents"),
+      excluded.length ? navLink("sec-files", "Files not included", excluded.length, true) : "");
 
     const list = (items, empty) => items.length ? el("ul", { class: "plain" }, items.map((x) => el("li", {}, x))) : el("p", { class: "muted" }, empty);
     const heading = (num, text) => el("h3", {}, el("span", { class: "num" }, num), text);
@@ -802,8 +883,19 @@
       el("section", { id: "sec-sources" },
         heading("6", "Source documents"),
         el("div", { class: "table-wrap" }, el("table", {},
-          el("thead", {}, el("tr", {}, el("th", {}, "Reference"), el("th", {}, "Document"))),
-          el("tbody", {}, Object.entries(frd.sources).map(([k, v]) => el("tr", {}, el("td", {}, k), el("td", {}, v))))))));
+          processed.length
+            ? [el("thead", {}, el("tr", {}, el("th", {}, "Reference"), el("th", {}, "Document"), el("th", {}, "Type"), el("th", {}, "Passages"))),
+               el("tbody", {}, processed.map((f) => el("tr", {}, el("td", {}, f.doc_id), el("td", {}, f.path), el("td", {}, f.type), el("td", {}, f.passages))))]
+            : [el("thead", {}, el("tr", {}, el("th", {}, "Reference"), el("th", {}, "Document"))),
+               el("tbody", {}, Object.entries(frd.sources).map(([k, v]) => el("tr", {}, el("td", {}, k), el("td", {}, v))))])),
+        excluded.length ? el("div", { id: "sec-files", style: "margin-top: 28px" },
+          el("h4", {}, "Files not included"),
+          el("div", { class: "table-wrap" }, el("table", {},
+            el("thead", {}, el("tr", {}, el("th", {}, "File"), el("th", {}, "Status"), el("th", {}, "Reason"))),
+            el("tbody", {}, excluded.map((f) => el("tr", {},
+              el("td", {}, f.path),
+              el("td", {}, el("span", { class: `status-tag ${f.status}` }, f.status[0].toUpperCase() + f.status.slice(1))),
+              el("td", {}, f.reason))))))) : ""));
     show("result");
   }
 
@@ -842,7 +934,7 @@
   async function init() {
     state.config = await api("/api/config");
     const types = state.config.accept.map((a) => a.slice(1).toUpperCase()).join(", ");
-    $("drop-hint").textContent = `${types} · up to ${state.config.max_files} files, ${state.config.max_file_mb} MB each`;
+    $("drop-hint").textContent = `${types} · up to ${state.config.max_files} files, ${state.config.max_file_mb} MB each, ${state.config.max_total_mb} MB in total`;
     input.accept = state.config.accept.join(",");
 
     const id = (location.hash.match(/job=([\w-]+)/) || [])[1];

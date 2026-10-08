@@ -6,9 +6,9 @@ from pathlib import Path
 
 from . import agents
 from .config import Settings
-from .ingest import chunk_documents, collect_files
+from .ingest import SUPPORTED, InputCollection, chunk_documents, collect_inputs
 from .llm import LLM, Cancelled
-from .models import FRD
+from .models import FRD, SourceFile
 from .render import build_blocks, to_docx, to_markdown
 from .retriever import HybridRetriever
 
@@ -36,15 +36,15 @@ def build_frd(inputs: list[Path], out_dir: Path, settings: Settings, title: str 
             raise Cancelled()
         log.info(f"Stage {n}/{len(STAGES)}: {STAGES[n - 1][0]}", extra={"stage": n})
 
-    files = collect_files(inputs)
-    if not files:
-        raise ValueError("No supported documents found (.pdf, .docx, .md, .txt).")
+    collection = collect_inputs(inputs, settings.dedup)
+    for record in collection.with_status("skipped", "duplicate", "failed"):
+        log.warning(f"{record.status.capitalize()}: {record.path} ({record.reason})")
 
     _stage(1)
-    chunks = chunk_documents(files, settings.chunk_words, settings.chunk_overlap)
+    chunks = chunk_documents(collection, settings.chunk_words, settings.chunk_overlap)
     if not chunks:
-        raise ValueError("The documents contain no extractable text (scanned PDFs need OCR first).")
-    log.info(f"{len(files)} documents -> {len(chunks)} chunks")
+        raise ValueError(_nothing_readable(collection))
+    log.info(input_summary(collection.records) + f"; {len(chunks)} passages indexed")
     retriever = HybridRetriever(chunks, settings)
     llm = LLM(settings, cancel)
     steps = out_dir / "steps"
@@ -52,6 +52,8 @@ def build_frd(inputs: list[Path], out_dir: Path, settings: Settings, title: str 
 
     def save(name: str, data) -> None:
         (steps / f"{name}.json").write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    save("0_inputs", [r.model_dump() for r in collection.records])
 
     _stage(2)
     material = agents.document_reader(llm, chunks, settings)
@@ -83,7 +85,7 @@ def build_frd(inputs: list[Path], out_dir: Path, settings: Settings, title: str 
     summary = agents.writer(llm, ctx, reqs)
 
     frd = FRD(context=ctx, summary=summary, requirements=reqs, open_questions=review.open_questions,
-              sources={f"D{i}": f.name for i, f in enumerate(files, 1)})
+              sources={r.doc_id: r.path for r in collection.with_status("processed")}, files=collection.records)
     blocks = build_blocks(frd, {c.id: c.cite() for c in chunks})
     (out_dir / "FRD.md").write_text(to_markdown(blocks), encoding="utf-8")
     to_docx(blocks, out_dir / "FRD.docx")
@@ -91,3 +93,21 @@ def build_frd(inputs: list[Path], out_dir: Path, settings: Settings, title: str 
 
     log.info(f"Done: {len(reqs)} requirements, {llm.calls} LLM calls, {time.time() - started:.0f}s")
     return frd
+
+
+def input_summary(records: list[SourceFile]) -> str:
+    counts = {s: sum(r.status == s for r in records) for s in ("processed", "skipped", "duplicate", "failed")}
+    labels = {"skipped": "skipped", "duplicate": "duplicate" if counts["duplicate"] == 1 else "duplicates", "failed": "failed"}
+    parts = [f"{counts['processed']} processed"] + [f"{counts[s]} {label}" for s, label in labels.items() if counts[s]]
+    return f"{len(records)} files: " + ", ".join(parts)
+
+
+def _nothing_readable(collection: InputCollection) -> str:
+    problems = collection.with_status("failed")
+    if not problems:
+        skipped = len(collection.with_status("skipped"))
+        found = f" {skipped} unsupported file(s) were skipped." if skipped else ""
+        return f"No supported documents found ({', '.join(SUPPORTED)}).{found}"
+    listed = "; ".join(f"{r.path} ({r.reason})" for r in problems[:10])
+    more = f"; and {len(problems) - 10} more" if len(problems) > 10 else ""
+    return f"None of the documents could be read: {listed}{more}."

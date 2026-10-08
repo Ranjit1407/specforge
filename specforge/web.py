@@ -14,7 +14,7 @@ from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 
 from .config import Settings
-from .ingest import SUPPORTED
+from .ingest import SUPPORTED, is_hidden
 from .llm import Cancelled, LLMError
 from .pipeline import STAGES, build_frd
 
@@ -24,8 +24,9 @@ logging.getLogger("specforge").setLevel(logging.INFO)
 
 RUNS = Path(__file__).resolve().parent.parent / "runs"
 STATIC = Path(__file__).parent / "static"
-MAX_FILES = 20
+MAX_FILES = 200
 MAX_FILE_MB = 25
+MAX_TOTAL_MB = 200
 DOWNLOADS = {
     "docx": ("FRD.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
     "md": ("FRD.md", "text/markdown; charset=utf-8"),
@@ -87,7 +88,9 @@ def _run(job: Job) -> None:
     job.status = "running"
     job.emit(type="status", status="running")
     try:
-        build_frd([RUNS / job.id / "inputs"], job.out_dir, Settings(), job.title or None, job.cancel)
+        # Top-level uploads are passed one by one so a dropped folder keeps its own name in file paths.
+        inputs = sorted((RUNS / job.id / "inputs").iterdir())
+        build_frd(inputs, job.out_dir, Settings(), job.title or None, job.cancel)
         job.status = "done"
     except Cancelled:
         log.info("Job %s stopped by the user", job.id)
@@ -117,11 +120,28 @@ def _friendly(error: LLMError) -> str:
             "so trying again in a few minutes resumes where this run stopped.")
 
 
+# Names Windows cannot use for files or folders, whatever the extension.
+_RESERVED = {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)), *(f"LPT{i}" for i in range(1, 10))}
+
+
+def _safe_part(text: str, limit: int, default: str) -> str:
+    part = re.sub(r"[^\w\- ]+", "_", text).strip(" ._")[:limit] or default
+    return f"_{part}" if part.upper() in _RESERVED else part
+
+
 def _safe_name(name: str | None) -> str:
     base = Path(name or "").name
-    stem, suffix = Path(base).stem, Path(base).suffix.lower()
-    stem = re.sub(r"[^\w\- ]+", "_", stem).strip(" ._")[:100] or "document"
-    return stem + suffix
+    return _safe_part(Path(base).stem, 100, "document") + Path(base).suffix.lower()
+
+
+def _safe_rel_path(name: str) -> Path | None:
+    """Turns a browser-supplied relative path into one that stays inside the job folder.
+    Returns None for hidden or temporary files, which are ignored like they are for folders on disk."""
+    parts = [p for p in re.split(r"[\\/]+", name) if p not in ("", ".", "..")]
+    if not parts or any(is_hidden(p) for p in parts):
+        return None
+    folders = [_safe_part(p, 80, "folder") for p in parts[:-1][-8:]]
+    return Path(*folders, _safe_name(parts[-1]))
 
 
 def _get(job_id: str) -> Job:
@@ -138,33 +158,44 @@ def index() -> FileResponse:
 
 @app.get("/api/config")
 def config() -> dict:
-    return {"accept": sorted(SUPPORTED), "max_files": MAX_FILES, "max_file_mb": MAX_FILE_MB,
+    return {"accept": sorted(SUPPORTED), "max_files": MAX_FILES, "max_file_mb": MAX_FILE_MB, "max_total_mb": MAX_TOTAL_MB,
             "stages": [{"name": name, "description": desc} for name, desc in STAGES]}
 
 
 @app.post("/api/jobs", status_code=201)
-async def create_job(files: list[UploadFile] = File(...), title: str = Form("")) -> dict:
+async def create_job(files: list[UploadFile] = File(...), paths: list[str] = Form([]),
+                     title: str = Form("")) -> dict:
+    """Accepts individual files and whole folders. `paths` carries each file's relative path
+    (for example "Specs/Billing/rules.pdf"), in the same order as `files`."""
     if len(files) > MAX_FILES:
         raise HTTPException(400, f"Upload at most {MAX_FILES} files.")
+    if paths and len(paths) != len(files):
+        raise HTTPException(400, "Each uploaded file needs exactly one path.")
     job_id = uuid.uuid4().hex[:12]
     inputs = RUNS / job_id / "inputs"
     inputs.mkdir(parents=True)
     names: list[str] = []
+    total = 0
     try:
-        for upload in files:
-            name = _safe_name(upload.filename)
-            if Path(name).suffix not in SUPPORTED:
-                raise HTTPException(400, f"{upload.filename}: unsupported type. Use {', '.join(sorted(SUPPORTED))}.")
+        for i, upload in enumerate(files):
+            # Unsupported types are stored too: the shared pipeline records them as skipped, as it does for the CLI.
+            rel = _safe_rel_path(paths[i] if paths else upload.filename or "")
+            if rel is None:
+                continue
             data = await upload.read(MAX_FILE_MB * 1024 * 1024 + 1)
             if len(data) > MAX_FILE_MB * 1024 * 1024:
-                raise HTTPException(413, f"{upload.filename} is larger than {MAX_FILE_MB} MB.")
-            if not data:
-                raise HTTPException(400, f"{upload.filename} is empty.")
-            dest, n = inputs / name, 2
+                raise HTTPException(413, f"{rel.as_posix()} is larger than {MAX_FILE_MB} MB.")
+            total += len(data)
+            if total > MAX_TOTAL_MB * 1024 * 1024:
+                raise HTTPException(413, f"The upload is larger than {MAX_TOTAL_MB} MB in total.")
+            dest, n = inputs / rel, 2
             while dest.exists():
-                dest, n = inputs / f"{Path(name).stem} ({n}){Path(name).suffix}", n + 1
+                dest, n = inputs / rel.parent / f"{rel.stem} ({n}){rel.suffix}", n + 1
+            dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_bytes(data)
-            names.append(dest.name)
+            names.append(dest.relative_to(inputs).as_posix())
+        if not names:
+            raise HTTPException(400, "No files to process.")
     except HTTPException:
         shutil.rmtree(RUNS / job_id, ignore_errors=True)
         raise

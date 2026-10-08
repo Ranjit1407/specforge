@@ -95,9 +95,21 @@ class Summary(BaseModel):
     module_overviews: dict[str, str] = Field(default_factory=dict)
 
 
+class SourceFile(BaseModel):
+    """One input file and what happened to it."""
+    path: str  # relative path shown to users, e.g. "specs/billing/rules.pdf"
+    type: str
+    size: int
+    status: Literal["pending", "processed", "skipped", "duplicate", "failed"] = "pending"
+    reason: str = ""
+    doc_id: str | None = None
+    passages: int = 0
+
+
 class FRD(BaseModel):
     context: ProjectContext
     summary: Summary
     requirements: list[Requirement]
     open_questions: list[str]
     sources: dict[str, str]
+    files: list[SourceFile] = Field(default_factory=list)

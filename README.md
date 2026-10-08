@@ -12,15 +12,39 @@ copy .env.example .env   # then put your OpenRouter key in .env
 .\.venv\Scripts\python -m specforge.web     # web UI at http://127.0.0.1:8000
 ```
 
-In the web UI, drop in your documents, optionally name the project, and click **Generate FRD**. You can watch each agent's progress live, then preview the FRD and download it as Word, Markdown or JSON.
+In the web UI, drop in files or whole folders (or use **Select a folder**), optionally name the project, and click **Generate FRD**. You can watch each agent's progress live, then preview the FRD and download it as Word, Markdown or JSON.
 
-Command-line equivalent:
+### Inputs
+
+SpecForge accepts a single file, several files, a folder, nested subfolders, or any mix of these. The web UI and the CLI feed the same pipeline, so the same inputs give the same results.
 
 ```powershell
-.\.venv\Scripts\python -m specforge path\to\docs another.pdf -o output\myproject --title "My Project"
+.\.venv\Scripts\python -m specforge brd.pdf                                   # one file
+.\.venv\Scripts\python -m specforge brd.pdf notes.txt minutes.docx             # several files
+.\.venv\Scripts\python -m specforge project-docs\ -o output\billing           # a folder, scanned recursively
+.\.venv\Scripts\python -m specforge project-docs\ extra.pdf --title "Billing"  # a mix
+.\.venv\Scripts\python -m specforge project-docs\ --check                      # validate and list inputs only, no model calls
 ```
 
-Options: `--top-k N` (chunks per query), `--no-dense` (BM25 only, no embedding download), `--no-cache` (ignore cached replies). Inputs: `.pdf`, `.docx`, `.md`, `.txt`.
+| Option | Meaning |
+| --- | --- |
+| `-o, --out DIR` | Output folder (default `output`) |
+| `--title NAME` | Project name for the FRD title |
+| `--check` | Validate and read every input, print a per-file table, and exit without calling the model |
+| `--dedup content\|path` | `content` (default): files with identical content are processed once. `path`: only the same file reached twice is |
+| `--chunk-words N`, `--chunk-overlap N` | Passage size and overlap in words (defaults 220 and 40) |
+| `--top-k N` | Passages retrieved per search query (default 6) |
+| `--no-dense` | Keyword (BM25) retrieval only; skips the embedding model download |
+| `--no-cache` | Ignore cached model replies |
+
+Every file found gets a record with its relative path (for example `project-docs/specs/api.txt`), type, size and status:
+
+- **processed**: read and indexed. It gets a reference such as `D3` that requirements cite.
+- **skipped**: unsupported type (supported: `.pdf`, `.docx`, `.md`, `.txt`). It is ignored with a warning.
+- **duplicate**: same content as another file, or the same file listed twice.
+- **failed**: could not be used (empty, unreadable, corrupt, password-protected, or a PDF with no text layer). The rest of the files are still processed.
+
+Hidden files and folders (`.git`, `.DS_Store`) and Office lock files (`~$name.docx`) are ignored. A path that does not exist stops the run before anything is processed. The per-file results appear in the CLI output, on the result page, in the FRD's appendices (Appendix B lists files not included) and in `frd.json` under `files`. The run fails only when no file at all can be read.
 
 ## How it works
 
