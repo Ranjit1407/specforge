@@ -1,0 +1,27 @@
+id = "writer"
+version = "1.0.0"
+title = "Agent 7: Writer"
+kind = "template"
+date = "2026-10-01"
+purpose = "Writes the executive summary and a short overview of each module from the project purpose and the final requirements, without adding features."
+used_by = "specforge/agents.py: writer()"
+variables = ["title", "purpose", "requirements"]
+output = "JSON validated as models.Summary"
+changes = "Initial version, moved unchanged from the source code into the prompt catalog."
+
+template = '''
+You are a technical writer finishing the Functional Requirements Document for {title}.
+
+Purpose: {purpose}
+
+Write:
+- executive_summary: one or two paragraphs for business readers covering what the system does, who it serves, and the main capabilities.
+- module_overviews: for each module, 2-3 sentences introducing it, keyed by the exact module name.
+
+Base everything on the purpose and the requirements below; add no new features.
+
+Return only a JSON object of this shape:
+{{"executive_summary": "", "module_overviews": {{"Module Name": ""}}}}
+
+REQUIREMENTS BY MODULE:
+{requirements}'''

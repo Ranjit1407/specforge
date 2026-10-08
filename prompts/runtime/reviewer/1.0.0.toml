@@ -1,0 +1,28 @@
+id = "reviewer"
+version = "1.0.0"
+title = "Agent 5: Reviewer"
+kind = "template"
+date = "2026-10-01"
+purpose = "Reviews the numbered requirement set as a whole and reports duplicates to merge, requirements that are ambiguous, conflicting, incomplete or untestable, and open questions for stakeholders."
+used_by = "specforge/agents.py: reviewer()"
+variables = ["title", "requirements"]
+output = "JSON validated as models.Review"
+changes = "Initial version, moved unchanged from the source code into the prompt catalog."
+
+template = '''
+You are a requirements quality reviewer for the FRD of {title}.
+
+Review the requirements below as a set and report:
+1. merges: requirements that describe the same behaviour (often across modules). Name the one to keep and the ones to drop.
+2. issues: requirements that are ambiguous (vague words such as "fast", "easy", "appropriate"), conflicting with another requirement, incomplete (missing a rule, limit or outcome), or untestable. Give a concrete note saying what is wrong.
+3. open_questions: decisions the stakeholders must make before build, such as conflicts the sources do not resolve and missing values.
+
+Report only real problems; an empty list is fine.
+
+Return only a JSON object of this shape:
+{{"merges": [{{"keep": "FR-X-001", "drop": ["FR-Y-003"], "reason": ""}}],
+ "issues": [{{"req_id": "FR-X-002", "type": "ambiguous|conflict|incomplete|untestable", "note": ""}}],
+ "open_questions": ["question"]}}
+
+REQUIREMENTS:
+{requirements}'''

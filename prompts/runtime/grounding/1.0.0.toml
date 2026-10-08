@@ -1,0 +1,12 @@
+id = "grounding"
+version = "1.0.0"
+title = "Grounding rule"
+kind = "fragment"
+date = "2026-10-01"
+purpose = "Shared instruction that keeps every agent tied to the source material: no invented features, values, roles or rules, and empty fields where the sources are silent."
+used_by = "Inserted as {grounding} into document_reader, scope_analyst, requirements_extractor, coverage_sweep and refiner"
+output = "Text fragment"
+changes = "Initial version, moved unchanged from the source code into the prompt catalog."
+
+template = '''
+Use only the source material. Do not invent features, values, roles or rules it does not support. When the sources are silent on something, leave that field empty.'''

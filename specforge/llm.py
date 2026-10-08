@@ -11,21 +11,11 @@ import openai
 from openai import OpenAI
 from pydantic import BaseModel, ValidationError
 
+from . import prompts
 from .config import Settings
 
 log = logging.getLogger(__name__)
 T = TypeVar("T", bound=BaseModel)
-
-REPAIR_PROMPT = """Your previous reply could not be parsed or did not match the required JSON shape.
-
-Error:
-{error}
-
-Previous reply:
-{raw}
-
-Return the corrected JSON only, with no commentary and no code fences. Keep all the content; fix only the structure."""
-
 
 class LLMError(RuntimeError):
     pass
@@ -118,7 +108,7 @@ class LLM:
                 if attempt == 2:
                     raise LLMError(f"model did not return valid {schema.__name__} JSON: {e}") from e
                 log.warning(f"Reply was not valid {schema.__name__} JSON; asking the model to repair it")
-                raw = self._call(REPAIR_PROMPT.format(error=str(e)[:2000], raw=raw[-20000:]), max_tokens)
+                raw = self._call(prompts.render("json_repair", error=str(e)[:2000], raw=raw[-20000:]), max_tokens)
 
         if cached:
             cached.parent.mkdir(parents=True, exist_ok=True)

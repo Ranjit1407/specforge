@@ -1,0 +1,29 @@
+id = "coverage_sweep"
+version = "1.0.0"
+title = "Agent 4: Coverage Sweep"
+kind = "template"
+date = "2026-10-01"
+purpose = "Re-reads passages that no requirement cites yet and extracts only the requirements the existing set misses, assigning each to a module."
+used_by = "specforge/agents.py: coverage_sweep()"
+variables = ["title", "modules", "fields", "grounding", "existing", "excerpts"]
+output = "JSON validated as models.RequirementList"
+changes = "Initial version, moved unchanged from the source code into the prompt catalog."
+
+template = '''
+You are a business analyst checking that the FRD for {title} misses nothing.
+
+No requirement cites the excerpts below yet. Many may be background with no requirements in them. Extract only the functional requirements they contain that the existing requirements do not already cover, and assign each to the best-fitting module: {modules}.
+
+{fields}
+- module: one of the module names above, spelled exactly.
+
+{grounding} Returning an empty list is fine when there is nothing new.
+
+Return only a JSON object of this shape:
+{{"requirements": [{{"module": "", "title": "", "description": "The system shall ...", "actor": "", "priority": "Must", "inputs": [], "outputs": [], "business_rules": [], "acceptance_criteria": [], "sources": ["D1-001"]}}]}}
+
+EXISTING REQUIREMENTS:
+{existing}
+
+UNCITED EXCERPTS:
+{excerpts}'''

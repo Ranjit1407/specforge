@@ -1,0 +1,21 @@
+id = "json_repair"
+version = "1.0.0"
+title = "JSON repair"
+kind = "template"
+date = "2026-10-01"
+purpose = "Sent back to the model when a reply is not valid JSON or does not match the expected schema, asking it to fix the structure without dropping content."
+used_by = "specforge/llm.py: LLM.complete_json()"
+variables = ["error", "raw"]
+output = "Corrected JSON in the originally requested shape"
+changes = "Initial version, moved unchanged from the source code into the prompt catalog."
+
+template = '''
+Your previous reply could not be parsed or did not match the required JSON shape.
+
+Error:
+{error}
+
+Previous reply:
+{raw}
+
+Return the corrected JSON only, with no commentary and no code fences. Keep all the content; fix only the structure.'''

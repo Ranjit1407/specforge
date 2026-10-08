@@ -1,0 +1,28 @@
+id = "requirements_extractor"
+version = "1.0.0"
+title = "Agent 3: Requirements Extractor"
+kind = "template"
+date = "2026-10-01"
+purpose = "Runs once per module on the passages retrieved for it and extracts every supported functional requirement, one behaviour each, with priority, acceptance criteria and citations."
+used_by = "specforge/agents.py: requirements_extractor()"
+variables = ["module", "title", "description", "others", "fields", "grounding", "excerpts"]
+output = "JSON validated as models.RequirementList"
+changes = "Initial version, moved unchanged from the source code into the prompt catalog."
+
+template = '''
+You are a business analyst writing the functional requirements for the "{module}" module of {title}.
+
+Module scope: {description}
+Other modules (leave their requirements to them): {others}
+
+Extract every functional requirement for this module that the source excerpts support. A functional requirement is a behaviour the system must perform. Split compound statements so each requirement covers one behaviour.
+
+{fields}
+
+{grounding} If the excerpts hold nothing for this module, return an empty list.
+
+Return only a JSON object of this shape:
+{{"requirements": [{{"title": "", "description": "The system shall ...", "actor": "", "priority": "Must", "inputs": [], "outputs": [], "business_rules": [], "acceptance_criteria": [], "sources": ["D1-001"]}}]}}
+
+SOURCE EXCERPTS:
+{excerpts}'''

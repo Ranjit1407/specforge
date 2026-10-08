@@ -1,0 +1,20 @@
+id = "requirement_fields"
+version = "1.0.0"
+title = "Requirement field guide"
+kind = "fragment"
+date = "2026-10-01"
+purpose = "Shared definition of the fields every extracted requirement must carry: a 3-8 word title, one testable 'The system shall' sentence, actor, priority rules, inputs and outputs, business rules, 2-4 acceptance criteria and at least one source citation."
+used_by = "Inserted as {fields} into requirements_extractor and coverage_sweep"
+output = "Text fragment"
+changes = "Initial version, moved unchanged from the source code into the prompt catalog."
+
+template = '''
+For each requirement:
+- title: 3-8 words.
+- description: one "The system shall ..." sentence, specific and testable. Keep exact values from the sources (limits, time windows, amounts, formats).
+- actor: the user role or external system that triggers or uses it.
+- priority: "Must", "Should" or "Could". Follow the sources; when they say nothing, use "Must" for core flows and "Should" otherwise.
+- inputs / outputs: data the behaviour consumes and produces, if the sources say.
+- business_rules: rules and validations that constrain it, if the sources say.
+- acceptance_criteria: 2-4 checkable criteria, in Given/When/Then form where it fits.
+- sources: IDs of the excerpts that support it, e.g. ["D1-004"]. At least one.'''
