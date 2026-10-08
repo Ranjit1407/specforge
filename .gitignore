@@ -1,7 +1,33 @@
+# Secrets and local configuration: never commit keys, tokens or credentials.
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+secrets/
+credentials*.json
+
+# Python
 .venv/
+venv/
 __pycache__/
-*.pyc
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Generated at run time
 output/
 runs/
 .cache/
+*.log
+
+# Editors and operating systems
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
