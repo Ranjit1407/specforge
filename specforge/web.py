@@ -40,6 +40,7 @@ class Job:
     id: str
     title: str
     files: list[str]
+    prepared_by: str = ""
     status: str = "queued"  # queued | running | done | error | cancelled
     stage: int = 0
     error: str | None = None
@@ -91,7 +92,7 @@ def _run(job: Job) -> None:
     try:
         # Top-level uploads are passed one by one so a dropped folder keeps its own name in file paths.
         inputs = sorted((RUNS / job.id / "inputs").iterdir())
-        build_frd(inputs, job.out_dir, Settings(), job.title or None, job.cancel)
+        build_frd(inputs, job.out_dir, Settings(), job.title or None, job.cancel, job.prepared_by or None)
         job.status = "done"
     except Cancelled:
         log.info("Job %s stopped by the user", job.id)
@@ -165,7 +166,7 @@ def config() -> dict:
 
 @app.post("/api/jobs", status_code=201)
 async def create_job(files: list[UploadFile] = File(...), paths: list[str] = Form([]),
-                     title: str = Form("")) -> dict:
+                     title: str = Form(""), prepared_by: str = Form("")) -> dict:
     """Accepts individual files and whole folders. `paths` carries each file's relative path
     (for example "Specs/Billing/rules.pdf"), in the same order as `files`."""
     if len(files) > MAX_FILES:
@@ -201,7 +202,7 @@ async def create_job(files: list[UploadFile] = File(...), paths: list[str] = For
         shutil.rmtree(RUNS / job_id, ignore_errors=True)
         raise
 
-    job = Job(id=job_id, title=title.strip()[:120], files=names)
+    job = Job(id=job_id, title=title.strip()[:120], files=names, prepared_by=prepared_by.strip()[:120])
     jobs[job_id] = job
     ahead = sum(j.status in ("queued", "running") for j in jobs.values()) - 1
     job.emit(type="status", status="queued", ahead=ahead)
@@ -216,6 +217,7 @@ def get_job(job_id: str) -> dict:
               "error": job.error, "created": job.created}
     if job.status == "done":
         result["frd"] = json.loads((job.out_dir / "frd.json").read_text(encoding="utf-8"))
+        result["preview"] = (job.out_dir / "preview.html").read_text(encoding="utf-8")
     return result
 
 

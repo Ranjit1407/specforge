@@ -1,0 +1,20 @@
+id = "requirement_fields"
+version = "2.0.0"
+title = "Requirement field guide"
+kind = "fragment"
+date = "2026-10-08"
+purpose = "Shared definition of the fields every extracted requirement must carry: a 3-8 word title, one testable 'The system shall' sentence, actor, priority with its source basis, inputs and outputs, business rules, 2-4 measurable acceptance criteria and at least one source citation."
+used_by = "Inserted as {fields} into requirements_extractor and coverage_sweep"
+output = "Text fragment"
+changes = "MAJOR: priority moves to the template scale with a priority_basis field (rules in the priority_rules fragment); descriptions must be unambiguous and business-focused; acceptance criteria must be measurable and observable (FRD template (dev-15))."
+
+template = '''
+For each requirement:
+- title: 3-8 words.
+- description: one "The system shall ..." sentence that is specific, testable, unambiguous and written from a business perspective. Keep exact values from the sources (limits, time windows, amounts, formats) and their terminology. Rewrite informal wording professionally without changing its meaning.
+- actor: the user role or external system that triggers or uses it.
+- priority and priority_basis: follow the priority rules.
+- inputs / outputs: data the behaviour consumes and produces, if the sources say.
+- business_rules: rules, validations and authorization conditions that constrain it, if the sources say.
+- acceptance_criteria: 2-4 measurable criteria that describe observable system behaviour, in Given/When/Then form where it fits. Each must check this requirement.
+- sources: IDs of the excerpts that support it, e.g. ["D1-004"]. At least one.'''

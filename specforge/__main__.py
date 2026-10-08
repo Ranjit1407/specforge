@@ -48,6 +48,7 @@ def main() -> None:
                    help=f"files and/or folders; folders are scanned recursively ({', '.join(SUPPORTED)})")
     p.add_argument("-o", "--out", type=Path, default=Path("output"), help="output folder (default: output)")
     p.add_argument("--title", help="project name to use as the FRD title")
+    p.add_argument("--prepared-by", help="name shown as the document's author (default: SpecForge automated draft)")
     p.add_argument("--check", action="store_true",
                    help="validate and read the inputs, list what would be processed, and exit without calling the model")
     p.add_argument("--dedup", choices=DEDUP_POLICIES, default="content",
@@ -87,7 +88,7 @@ def main() -> None:
         sys.exit(0 if collection.with_status("processed") else 1)
 
     try:
-        frd = build_frd(args.inputs, args.out, settings, args.title)
+        frd = build_frd(args.inputs, args.out, settings, args.title, prepared_by=args.prepared_by)
     except (LLMError, ValueError) as e:
         sys.exit(f"Error: {e}")
     console.print(f"\nWrote {args.out / 'FRD.md'}, {args.out / 'FRD.docx'}, {args.out / 'frd.json'}")

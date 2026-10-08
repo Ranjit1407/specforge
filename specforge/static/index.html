@@ -120,9 +120,6 @@
   .pick-row { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; margin-top: 12px; font-size: 13.5px; }
   .btn.sm { height: 34px; padding: 0 14px; font-size: 13.5px; }
   .alert ul { margin: 6px 0 0; padding-left: 18px; }
-  .status-tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
-  .status-tag.failed { background: var(--error-soft); color: var(--error); }
-  .status-tag.skipped, .status-tag.duplicate { background: var(--warn-soft); color: var(--warn); }
   .file { display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
   .ftype { flex: none; width: 40px; height: 40px; border-radius: 8px; display: grid; place-items: center; font: 700 10.5px/1 var(--font); letter-spacing: .03em; }
   .ftype.pdf { background: var(--error-soft); color: var(--error); }
@@ -217,48 +214,29 @@
   .doc-nav a { display: flex; justify-content: space-between; gap: 8px; padding: 7px 8px; border-radius: 6px; color: var(--text-2); text-decoration: none; font-size: 13.5px; }
   .doc-nav a:hover { background: var(--surface-2); color: var(--text); }
   .doc-nav a .count { color: var(--muted); font-variant-numeric: tabular-nums; }
-  .doc-nav .indent { padding-left: 18px; }
 
   .doc { padding: 36px 40px; }
   @media (max-width: 640px) { .doc { padding: 22px 18px; } }
-  .doc section + section { margin-top: 40px; padding-top: 32px; border-top: 1px solid var(--border); }
-  .doc h3 { font-size: 19px; font-weight: 600; margin-bottom: 14px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-  .doc h3 .num { color: var(--primary); font-variant-numeric: tabular-nums; }
-  .doc h4 { font-size: 13px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; margin: 20px 0 8px; }
   .doc p { margin: 0 0 12px; color: var(--text-2); }
-  .doc ul.plain { margin: 0; padding-left: 20px; color: var(--text-2); }
-  .doc ul.plain li { margin-bottom: 6px; }
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-  @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
   .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
   th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; background: var(--surface-2); }
   th, td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
   tr:last-child td { border-bottom: 0; }
-  td:first-child { font-weight: 600; white-space: nowrap; }
+  td:first-child { font-weight: 600; }
 
-  .module-intro { color: var(--muted) !important; }
-  .req { border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; margin-top: 12px; background: var(--surface); }
-  .req-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  .req-id { font: 600 12px var(--mono); color: var(--primary); background: var(--primary-soft); padding: 3px 8px; border-radius: 6px; }
-  .req-title { font-weight: 600; font-size: 15px; flex: 1; min-width: 160px; }
-  .chip { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; border: 1px solid transparent; }
-  .chip.Must { background: var(--primary); color: var(--on-primary); }
-  .chip.Should { background: var(--teal-soft); color: var(--teal); border-color: color-mix(in srgb, var(--teal) 30%, transparent); }
-  .chip.Could { background: var(--surface-3); color: var(--muted); }
-  .req-desc { margin: 10px 0 0 !important; color: var(--text) !important; }
-  .req-block { margin-top: 12px; }
-  .req-block .k { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
-  .req-block ol, .req-block ul { margin: 0; padding-left: 20px; font-size: 14px; color: var(--text-2); }
-  .req-block li { margin-bottom: 4px; }
-  .req-foot { display: flex; gap: 6px 18px; flex-wrap: wrap; margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border); font-size: 12.5px; color: var(--muted); }
-  .req-foot b { color: var(--text-2); font-weight: 600; }
-  .note { margin-top: 12px; display: flex; gap: 8px; padding: 10px 12px; border-radius: 8px; background: var(--warn-soft); border: 1px solid var(--warn-border); color: var(--warn); font-size: 13.5px; }
-  .note b { white-space: nowrap; }
-  .empty { padding: 16px; border: 1px dashed var(--border-strong); border-radius: 8px; color: var(--muted); font-size: 14px; text-align: center; }
-  .questions { margin: 0; padding: 0; list-style: none; counter-reset: q; display: grid; gap: 10px; }
-  .questions li { counter-increment: q; display: grid; grid-template-columns: 30px 1fr; gap: 10px; padding: 12px 14px; border: 1px solid var(--warn-border); background: var(--warn-soft); border-radius: 8px; color: var(--text-2); font-size: 14.5px; }
-  .questions li::before { content: counter(q); width: 24px; height: 24px; border-radius: 50%; background: var(--warn); color: var(--surface); display: grid; place-items: center; font-size: 12px; font-weight: 700; }
+  .doc section + section { margin-top: 36px; padding-top: 28px; border-top: 1px solid var(--border); }
+  .doc h2 { font-size: 19px; font-weight: 600; margin: 0 0 14px; scroll-margin-top: 16px; }
+  .doc h3 { font-size: 16px; font-weight: 600; margin: 24px 0 10px; }
+  .doc h4 { font-size: 14.5px; font-weight: 600; margin: 18px 0 8px; }
+  .doc p.label { margin: 14px 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+  .doc p.na { color: var(--muted); font-style: italic; }
+  .doc p.note { padding: 10px 12px; border-radius: 8px; background: var(--warn-soft); border: 1px solid var(--warn-border); color: var(--warn); font-size: 13.5px; }
+  .doc ul, .doc ol { margin: 0 0 12px; padding-left: 22px; color: var(--text-2); }
+  .doc li { margin-bottom: 4px; }
+  .doc .table-wrap { margin: 4px 0 16px; }
+  .doc table { font-size: 13.5px; }
+  .doc td { color: var(--text-2); }
 
   footer { border-top: 1px solid var(--border); padding: 24px 0 40px; color: var(--muted); font-size: 13px; }
   footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
@@ -330,6 +308,11 @@
           <label class="field" for="title">
             <span class="field-label">Project name <span>(optional)</span></span>
             <input class="input" type="text" id="title" maxlength="120" placeholder="Taken from the documents if left blank" autocomplete="off">
+          </label>
+
+          <label class="field" for="prepared-by">
+            <span class="field-label">Prepared by <span>(optional)</span></span>
+            <input class="input" type="text" id="prepared-by" maxlength="120" placeholder="Name shown as the document's author" autocomplete="name">
           </label>
 
           <div class="form-actions">
@@ -590,6 +573,7 @@
       form.append("paths", path);
     }
     form.append("title", title);
+    form.append("prepared_by", $("prepared-by").value.trim());
     try {
       const { id } = await api("/api/jobs", { method: "POST", body: form });
       startJob(id, Date.now() / 1000, title, state.files.map((f) => f.path));
@@ -790,24 +774,13 @@
   }
 
   // ---------- Result ----------
-  function sourceText(ids, sources) {
-    const byDoc = new Map();
-    for (const id of ids) {
-      const doc = sources[id.split("-")[0]] || id;
-      if (!byDoc.has(doc)) byDoc.set(doc, []);
-      byDoc.get(doc).push(id);
-    }
-    return [...byDoc].map(([doc, list]) => `${doc} (${list.join(", ")})`).join("; ");
-  }
-
   function renderResult(job) {
     const { frd } = job;
-    const ctx = frd.context, reqs = frd.requirements;
+    const reqs = frd.requirements, access = frd.access.access_requirements;
     const docCount = Object.keys(frd.sources).length;
-    $("result-title").textContent = ctx.title;
+    $("result-title").textContent = frd.context.title;
     $("result-sub").textContent = `Generated ${new Date(job.created * 1000).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" })} from ${plural(docCount, "source document")}`;
     const files = frd.files || [];
-    const processed = files.filter((f) => f.status === "processed");
     const excluded = files.filter((f) => f.status !== "processed");
     const failed = excluded.filter((f) => f.status === "failed");
     const notice = [];
@@ -815,7 +788,7 @@
       const counts = ["failed", "skipped", "duplicate"].map((s) => [s, excluded.filter((f) => f.status === s).length]).filter(([, n]) => n);
       const parts = counts.map(([s, n]) => s === "failed" ? `${n} could not be read` : s === "skipped" ? `${n} skipped as unsupported` : `${plural(n, "duplicate")} left out`);
       notice.push(alertBox(failed.length ? "error" : "warn", `${plural(excluded.length, "file")} not included`,
-        el("span", {}, `${parts.join(", ")}. `, el("a", { href: "#sec-files" }, "See the list"), ".")));
+        el("span", {}, `${parts.join(", ")}. They are listed in Appendix B.`)));
     }
     $("result-notice").replaceChildren(...notice);
     $("result-notice").hidden = !notice.length;
@@ -827,96 +800,21 @@
 
     const kpi = (value, label, cls = "") => el("div", { class: `kpi ${cls}` }, el("b", {}, value), el("span", {}, label));
     $("kpis").replaceChildren(
-      kpi(reqs.length, "Requirements", "accent"),
-      kpi(ctx.modules.length, "Modules"),
-      kpi(reqs.filter((r) => r.priority === "Must").length, "Must-have"),
+      kpi(reqs.length, "Functional requirements", "accent"),
+      kpi(access.length, "Access requirements"),
+      kpi(frd.use_cases.length, "Use cases"),
       kpi(frd.open_questions.length, "Open questions", frd.open_questions.length ? "warn" : ""));
 
-    const modules = ctx.modules.map((m, i) => ({ ...m, anchor: `mod-${i + 1}`, items: reqs.filter((r) => r.module === m.name) }));
-    const navLink = (href, label, count, indent) => el("a", { href: `#${href}`, class: indent ? "indent" : "" }, el("span", {}, label), count != null ? el("span", { class: "count" }, count) : "");
-    $("doc-nav").replaceChildren(
-      el("div", { class: "label" }, "Contents"),
-      navLink("sec-intro", "1. Introduction"),
-      navLink("sec-scope", "2. Scope"),
-      navLink("sec-stakeholders", "3. Stakeholders"),
-      navLink("sec-requirements", "4. Requirements", reqs.length),
-      modules.map((m) => navLink(m.anchor, m.name, m.items.length, true)),
-      navLink("sec-questions", "5. Open questions", frd.open_questions.length),
-      navLink("sec-sources", "6. Source documents"),
-      excluded.length ? navLink("sec-files", "Files not included", excluded.length, true) : "");
-
-    const list = (items, empty) => items.length ? el("ul", { class: "plain" }, items.map((x) => el("li", {}, x))) : el("p", { class: "muted" }, empty);
-    const heading = (num, text) => el("h3", {}, el("span", { class: "num" }, num), text);
-
-    $("doc").replaceChildren(
-      el("section", { id: "sec-intro" },
-        heading("1", "Introduction"),
-        el("h4", {}, "Purpose"), el("p", {}, ctx.purpose),
-        el("h4", {}, "Executive summary"),
-        frd.summary.executive_summary.split(/\n\n+/).filter(Boolean).map((p) => el("p", {}, p))),
-      el("section", { id: "sec-scope" },
-        heading("2", "Scope"),
-        el("div", { class: "two-col" },
-          el("div", {}, el("h4", {}, "In scope"), list(ctx.scope_in, "Not stated in the sources.")),
-          el("div", {}, el("h4", {}, "Out of scope"), list(ctx.scope_out, "Not stated in the sources."))),
-        el("div", { class: "two-col" },
-          el("div", {}, el("h4", {}, "Assumptions"), list(ctx.assumptions, "None stated.")),
-          el("div", {}, el("h4", {}, "Constraints"), list(ctx.constraints, "None stated.")))),
-      el("section", { id: "sec-stakeholders" },
-        heading("3", "Stakeholders and user roles"),
-        ctx.stakeholders.length
-          ? el("div", { class: "table-wrap" }, el("table", {},
-              el("thead", {}, el("tr", {}, el("th", {}, "Role"), el("th", {}, "Needs"))),
-              el("tbody", {}, ctx.stakeholders.map((s) => el("tr", {}, el("td", {}, s.role), el("td", {}, s.description || "—"))))))
-          : el("p", { class: "muted" }, "No stakeholders identified in the sources.")),
-      el("section", { id: "sec-requirements" },
-        heading("4", "Functional requirements"),
-        modules.map((m, i) => el("div", { id: m.anchor, style: i ? "margin-top: 32px" : "" },
-          el("h4", { style: "font-size: 15px; text-transform: none; letter-spacing: 0; color: var(--text)" }, `4.${i + 1} ${m.name}`),
-          el("p", { class: "module-intro" }, frd.summary.module_overviews[m.name] || m.description),
-          m.items.length ? m.items.map((r) => renderRequirement(r, frd.sources)) : el("div", { class: "empty" }, "No requirements were found in the sources for this module.")))),
-      el("section", { id: "sec-questions" },
-        heading("5", "Open questions"),
-        frd.open_questions.length
-          ? el("ol", { class: "questions" }, frd.open_questions.map((q) => el("li", {}, el("span", {}, q))))
-          : el("p", { class: "muted" }, "No open questions were raised.")),
-      el("section", { id: "sec-sources" },
-        heading("6", "Source documents"),
-        el("div", { class: "table-wrap" }, el("table", {},
-          processed.length
-            ? [el("thead", {}, el("tr", {}, el("th", {}, "Reference"), el("th", {}, "Document"), el("th", {}, "Type"), el("th", {}, "Passages"))),
-               el("tbody", {}, processed.map((f) => el("tr", {}, el("td", {}, f.doc_id), el("td", {}, f.path), el("td", {}, f.type), el("td", {}, f.passages))))]
-            : [el("thead", {}, el("tr", {}, el("th", {}, "Reference"), el("th", {}, "Document"))),
-               el("tbody", {}, Object.entries(frd.sources).map(([k, v]) => el("tr", {}, el("td", {}, k), el("td", {}, v))))])),
-        excluded.length ? el("div", { id: "sec-files", style: "margin-top: 28px" },
-          el("h4", {}, "Files not included"),
-          el("div", { class: "table-wrap" }, el("table", {},
-            el("thead", {}, el("tr", {}, el("th", {}, "File"), el("th", {}, "Status"), el("th", {}, "Reason"))),
-            el("tbody", {}, excluded.map((f) => el("tr", {},
-              el("td", {}, f.path),
-              el("td", {}, el("span", { class: `status-tag ${f.status}` }, f.status[0].toUpperCase() + f.status.slice(1))),
-              el("td", {}, f.reason))))))) : ""));
+    // The preview is built and escaped on the server from the same blocks as the Word document.
+    $("doc").innerHTML = job.preview;
+    const counts = { "8": reqs.length, "9": access.length, "10": frd.use_cases.length, "18": frd.open_questions.length };
+    $("doc-nav").replaceChildren(el("div", { class: "label" }, "Contents"),
+      [...$("doc").querySelectorAll("section > h2")].map((h) => {
+        const number = (h.textContent.match(/^(\d+)\./) || [])[1];
+        return el("a", { href: `#${h.parentElement.id}` }, el("span", {}, h.textContent),
+          counts[number] != null ? el("span", { class: "count" }, counts[number]) : "");
+      }));
     show("result");
-  }
-
-  function renderRequirement(r, sources) {
-    const block = (label, items, ordered) => items.length
-      ? el("div", { class: "req-block" }, el("div", { class: "k" }, label), el(ordered ? "ol" : "ul", {}, items.map((x) => el("li", {}, x))))
-      : "";
-    return el("div", { class: "req" },
-      el("div", { class: "req-head" },
-        el("span", { class: "req-id" }, r.id),
-        el("span", { class: "req-title" }, r.title),
-        el("span", { class: `chip ${r.priority}` }, r.priority)),
-      el("p", { class: "req-desc" }, r.description),
-      block("Business rules", r.business_rules),
-      block("Acceptance criteria", r.acceptance_criteria, true),
-      r.notes.map((n) => el("div", { class: "note" }, el("b", {}, "Review note"), el("span", {}, n))),
-      el("div", { class: "req-foot" },
-        r.actor ? el("span", {}, el("b", {}, "Actor: "), r.actor) : "",
-        r.inputs.length ? el("span", {}, el("b", {}, "Inputs: "), r.inputs.join(", ")) : "",
-        r.outputs.length ? el("span", {}, el("b", {}, "Outputs: "), r.outputs.join(", ")) : "",
-        el("span", {}, el("b", {}, "Source: "), r.sources.length ? sourceText(r.sources, sources) : "none")));
   }
 
   function reset() {
@@ -924,6 +822,7 @@
     state.jobId = null;
     state.files = [];
     $("title").value = "";
+    $("prepared-by").value = "";
     history.replaceState(null, "", location.pathname);
     showUploadErrors([]);
     renderFiles();

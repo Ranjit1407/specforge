@@ -1,0 +1,30 @@
+id = "requirements_extractor"
+version = "2.0.0"
+title = "Agent 4: Requirements Extractor"
+kind = "template"
+date = "2026-10-08"
+purpose = "Runs once per module on the passages retrieved for it and extracts every supported functional requirement, one behaviour each, with priority, acceptance criteria and citations."
+used_by = "specforge/agents.py: requirements_extractor()"
+variables = ["module", "title", "description", "others", "fields", "priority_rules", "grounding", "excerpts"]
+output = "JSON validated as models.RequirementList"
+changes = "MAJOR: replies use the template priority scale with priority_basis (new {priority_rules} placeholder); duplicate statements and later clarifications are merged into one requirement citing every source; authorization conditions go into business rules (FRD template (dev-15))."
+
+template = '''
+You are a business analyst writing the functional requirements for the "{module}" module of {title}.
+
+Module scope: {description}
+Other modules (leave their requirements to them): {others}
+
+Extract every functional requirement for this module that the source excerpts support. A functional requirement is a behaviour the system must perform. Split compound statements so each requirement covers one behaviour. When several excerpts state the same requirement, or a later comment, email or change request clarifies it, write it once in its clarified form and cite every supporting excerpt. Put authorization conditions (who may view, create, change or approve something) in business_rules.
+
+{fields}
+
+{priority_rules}
+
+{grounding} If the excerpts hold nothing for this module, return an empty list.
+
+Return only a JSON object of this shape:
+{{"requirements": [{{"title": "", "description": "The system shall ...", "actor": "", "priority": "To be confirmed", "priority_basis": "", "inputs": [], "outputs": [], "business_rules": [], "acceptance_criteria": [], "sources": ["D1-001"]}}]}}
+
+SOURCE EXCERPTS:
+{excerpts}'''

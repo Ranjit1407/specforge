@@ -2,14 +2,15 @@ import json
 import logging
 import threading
 import time
+from datetime import date
 from pathlib import Path
 
 from . import agents
 from .config import Settings
 from .ingest import SUPPORTED, InputCollection, chunk_documents, collect_inputs
 from .llm import LLM, Cancelled
-from .models import FRD, SourceFile
-from .render import build_blocks, to_docx, to_markdown
+from .models import FRD, DocumentInfo, SourceFile
+from .render import build_blocks, to_docx, to_html, to_markdown
 from .retriever import HybridRetriever
 
 log = logging.getLogger(__name__)
@@ -17,17 +18,22 @@ log = logging.getLogger(__name__)
 STAGES = [
     ("Preparing documents", "Extracting text and indexing every passage"),
     ("Reading the material", "Building an understanding of the full document set"),
-    ("Defining scope", "Identifying purpose, stakeholders, constraints and modules"),
+    ("Defining scope", "Identifying purpose, scope, user roles, people and modules"),
+    ("Capturing specifications", "Assumptions, dependencies, statuses, non-functional, integration and UI requirements"),
     ("Extracting requirements", "Writing testable requirements for each module"),
     ("Checking coverage", "Re-reading passages that no requirement cites yet"),
-    ("Quality review", "Finding duplicates, conflicts and vague wording"),
+    ("Quality review", "Finding duplicates, conflicts, vague wording and open questions"),
     ("Refining", "Rewriting flagged requirements against the sources"),
-    ("Writing the document", "Executive summary, module overviews and export"),
+    ("Access and use cases", "Role-based access rules, the access matrix and detailed use cases"),
+    ("Writing the document", "Objective, overview and export"),
 ]
 
 
+DEFAULT_AUTHOR = "SpecForge (automated draft)"
+
+
 def build_frd(inputs: list[Path], out_dir: Path, settings: Settings, title: str | None = None,
-              cancel: threading.Event | None = None) -> FRD:
+              cancel: threading.Event | None = None, prepared_by: str | None = None) -> FRD:
     """Runs the agent chain. Setting `cancel` stops it at the next step or model request."""
     started = time.time()
 
@@ -64,34 +70,55 @@ def build_frd(inputs: list[Path], out_dir: Path, settings: Settings, title: str 
     save("1_context", ctx.model_dump())
 
     _stage(4)
-    reqs = agents.requirements_extractor(llm, retriever, settings, ctx)
+    spec = agents.specification_analyst(llm, material, ctx)
+    log.info(f"{len(spec.assumptions)} assumptions, {len(spec.dependencies)} dependencies, "
+             f"{len(spec.non_functional)} non-functional requirements, {len(spec.integrations)} integrations")
+    save("2_specification", spec.model_dump())
 
     _stage(5)
-    reqs = agents.coverage_sweep(llm, retriever, settings, ctx, reqs)
-    reqs = agents.number_requirements(ctx, reqs, set(retriever.by_id))
-    save("2_extracted", [r.model_dump() for r in reqs])
+    reqs = agents.requirements_extractor(llm, retriever, settings, ctx)
 
     _stage(6)
-    review = agents.reviewer(llm, ctx, reqs)
-    log.info(f"{len(review.merges)} merges, {len(review.issues)} issues, {len(review.open_questions)} open questions")
-    save("3_review", review.model_dump())
-    reqs = agents.apply_merges(reqs, review)
+    reqs = agents.coverage_sweep(llm, retriever, settings, ctx, reqs)
+    known = set(retriever.by_id)
+    reqs = agents.number_requirements(ctx, reqs, known)
+    save("3_extracted", [r.model_dump() for r in reqs])
 
     _stage(7)
-    reqs = agents.refiner(llm, retriever, settings, reqs, review)
-    save("4_refined", [r.model_dump() for r in reqs])
+    review = agents.reviewer(llm, ctx, reqs)
+    log.info(f"{len(review.merges)} merges, {len(review.issues)} issues, {len(review.open_questions)} open questions")
+    save("4_review", review.model_dump())
+    reqs = agents.apply_merges(reqs, review)
 
     _stage(8)
-    summary = agents.writer(llm, ctx, reqs)
+    reqs = agents.refiner(llm, retriever, settings, reqs, review)
+    save("5_refined", [r.model_dump() for r in reqs])
 
-    frd = FRD(context=ctx, summary=summary, requirements=reqs, open_questions=review.open_questions,
+    _stage(9)
+    access = agents.access_analyst(llm, retriever, settings, ctx, reqs)
+    log.info(f"{len(access.access_requirements)} access requirements, {len(access.matrix)} roles in the access matrix")
+    use_cases = agents.use_case_writer(llm, retriever, ctx, spec, reqs)
+    agents.assign_ids(spec, access, use_cases, known)
+    save("6_access", access.model_dump())
+    save("7_use_cases", [u.model_dump() for u in use_cases])
+
+    _stage(10)
+    summary = agents.writer(llm, ctx, reqs)
+    open_questions = agents.collect_open_questions(ctx, spec, review, access, reqs, known)
+
+    info = DocumentInfo(title=f"{ctx.title}: Functional Requirements Document",
+                        prepared_by=(prepared_by or "").strip() or DEFAULT_AUTHOR, date=date.today().isoformat())
+    frd = FRD(info=info, context=ctx, summary=summary, specification=spec, requirements=reqs, access=access,
+              use_cases=use_cases, open_questions=open_questions,
               sources={r.doc_id: r.path for r in collection.with_status("processed")}, files=collection.records)
     blocks = build_blocks(frd, {c.id: c.cite() for c in chunks})
     (out_dir / "FRD.md").write_text(to_markdown(blocks), encoding="utf-8")
     to_docx(blocks, out_dir / "FRD.docx")
+    (out_dir / "preview.html").write_text(to_html(blocks), encoding="utf-8")
     (out_dir / "frd.json").write_text(frd.model_dump_json(indent=2), encoding="utf-8")
 
-    log.info(f"Done: {len(reqs)} requirements, {llm.calls} LLM calls, {time.time() - started:.0f}s")
+    log.info(f"Done: {len(reqs)} requirements, {len(use_cases)} use cases, {len(open_questions)} open questions, "
+             f"{llm.calls} LLM calls, {time.time() - started:.0f}s")
     return frd
 
 

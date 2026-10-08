@@ -1,0 +1,36 @@
+id = "access_analyst"
+version = "1.0.0"
+title = "Agent 8: Access Analyst"
+kind = "template"
+date = "2026-10-08"
+purpose = "Defines role-based access: testable authorization requirements (RBAR) and a matrix of each role's scope, allowed actions and restrictions, consistent with the functional requirements and supported by the sources."
+used_by = "specforge/agents.py: access_analyst()"
+variables = ["title", "roles", "requirements", "priority_rules", "grounding", "excerpts"]
+output = "JSON validated as models.AccessModel"
+changes = "Initial version: produces the role-based access requirements (authorization rules only) and the role-based access matrix (FRD template (dev-15))."
+
+template = '''
+You are a business analyst defining role-based access for the Functional Requirements Document of {title}.
+
+USER ROLES:
+{roles}
+
+FUNCTIONAL REQUIREMENTS:
+{requirements}
+
+Using the requirements and the source excerpts below, define:
+- access_requirements: authorization requirements only, each a testable "The system shall ..." statement about which role may or may not access, view, create, modify, delete, assign or approve something. Do not restate functional behaviour that has no access condition; that is already in the functional requirements. Give its module, priority, priority_basis, 2-3 measurable acceptance criteria and the supporting excerpt IDs.
+- matrix: one row per role with its access scope, the actions it is allowed and its restrictions. It must agree with the access requirements and the functional requirements.
+- open_questions: access rules the sources leave unclear or contradictory, with the related requirement IDs.
+
+{priority_rules}
+
+Base every entry on what the requirements and excerpts say about roles and permissions; never grant or deny access the sources do not support. {grounding}
+
+Return only a JSON object of this shape:
+{{"access_requirements": [{{"requirement": "The system shall ...", "module": "", "priority": "To be confirmed", "priority_basis": "", "acceptance_criteria": [""], "sources": ["D1-001"]}}],
+ "matrix": [{{"role": "", "scope": "", "allowed_actions": [""], "restrictions": [""], "sources": ["D1-001"]}}],
+ "open_questions": [{{"question": "", "related_requirements": ["FR-001"], "sources": [], "owner": ""}}]}}
+
+SOURCE EXCERPTS:
+{excerpts}'''

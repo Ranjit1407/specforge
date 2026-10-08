@@ -2,7 +2,7 @@
 
 SpecForge generates a Functional Requirements Document (FRD) from any set of source documents (BRDs, meeting notes, emails, specs, RFPs) using a chain of LLM agents over a hybrid RAG index. It is domain-agnostic: modules, user roles, search queries and requirements all come from the documents you provide. It runs on free models through OpenRouter.
 
-Current version: **1.2.0**. See [CHANGELOG.md](CHANGELOG.md) for release history.
+Current version: **2.0.0**. See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Contents
 
@@ -20,9 +20,10 @@ Current version: **1.2.0**. See [CHANGELOG.md](CHANGELOG.md) for release history
 ## Features
 
 - **Any input shape**: a single file, several files, folders and nested subfolders (`.pdf`, `.docx`, `.md`, `.txt`), from the web UI or the CLI, with validation, deduplication and a per-file status report.
-- **Seven-agent pipeline**: reader, scope analyst, per-module requirements extractor, coverage sweep, reviewer, refiner and writer.
+- **Enterprise FRD template**: a 21-section document covering document information, sign-off authority, team contacts, revision history, objective, overview and scope, end-user roles, the functional requirements summary, role-based access requirements, detailed use cases, the access matrix, assumptions and dependencies, status and priority definitions, non-functional, integration and UI requirements, open questions, the traceability matrix, acceptance criteria and sign-off. See [The FRD template](#the-frd-template).
+- **Ten-agent pipeline**: reader, scope analyst, specification analyst, per-module requirements extractor, coverage sweep, reviewer, refiner, access analyst, use case writer and writer.
 - **Grounded and traceable**: every requirement cites the source passages it came from, and the FRD ends with a traceability matrix.
-- **Structured output**: requirements with IDs, priorities (Must, Should, Could), actors, inputs and outputs, business rules and acceptance criteria, plus open questions for stakeholders.
+- **Nothing invented**: priorities (Critical, High, Medium, Low) are set only when the sources support them, and otherwise marked "To be confirmed". Missing information reads "Not specified in source material", and conflicts become open questions instead of being resolved silently.
 - **Exports**: Word (`FRD.docx`), Markdown (`FRD.md`) and JSON (`frd.json`).
 - **Web UI**: drag-and-drop or folder upload, live progress, a Stop button, and an FRD preview with downloads.
 - **Resilient on free models**: model fallback, exponential backoff and an on-disk cache, so interrupted runs resume.
@@ -87,7 +88,7 @@ Pipeline defaults (passage size, retrieval depth, context budget, retries, cache
 
 The server listens on this computer only. `--host 0.0.0.0` makes it reachable from your network, but it has no login, so use that only on a trusted network.
 
-In the web UI, drop in files or whole folders (or use **Select a folder**), optionally name the project, and click **Generate FRD**. You can watch each agent's progress live, then preview the FRD and download it as Word, Markdown or JSON.
+In the web UI, drop in files or whole folders (or use **Select a folder**), optionally enter the project name and the author (**Prepared by**), and click **Generate FRD**. You can watch each agent's progress live, then preview the FRD and download it as Word, Markdown or JSON.
 
 ### Command line
 
@@ -105,6 +106,7 @@ SpecForge accepts a single file, several files, a folder, nested subfolders, or 
 | --- | --- |
 | `-o, --out DIR` | Output folder (default `output`) |
 | `--title NAME` | Project name for the FRD title |
+| `--prepared-by NAME` | Author shown in Document Information and the revision history (default: SpecForge automated draft) |
 | `--check` | Validate and read every input, print a per-file table, and exit without calling the model |
 | `--dedup content\|path` | `content` (default): files with identical content are processed once. `path`: only the same file reached twice is |
 | `--chunk-words N`, `--chunk-overlap N` | Passage size and overlap in words (defaults 220 and 40) |
@@ -128,21 +130,57 @@ Run `.\.venv\Scripts\python -m specforge --help` for the full option list.
 ```
 documents ─► chunk ─► hybrid index (BM25 + bge-small embeddings, fused with RRF)
                               │
-   ┌──────────────────────────┴────────────────────────────────────────────┐
-   │ 1 Document Reader    small sets: whole text passed on as-is;          │
-   │                      large sets: summarised part by part, with IDs    │
-   │ 2 Scope Analyst      → title, purpose, scope, roles, constraints,     │
-   │                        modules + search queries in the docs' terms    │
-   │ 3 Req. Extractor     per module: retrieve → requirements with         │
-   │                      acceptance criteria + citations                  │
-   │ 4 Coverage Sweep     excerpts no requirement cites → missed reqs      │
-   │ 5 Reviewer           duplicates, conflicts, ambiguity, open questions │
-   │ 6 Refiner            flagged reqs + their cited evidence → rewritten  │
-   │ 7 Writer             executive summary + module overviews            │
-   └────────────────────────────────────────────────────────────────────────┘
+   ┌──────────────────────────┴────────────────────────────────────────────────┐
+   │  1 Document Reader       small sets: whole text passed on as-is;          │
+   │                          large sets: summarised part by part, with IDs    │
+   │  2 Scope Analyst         title, purpose, scope, user roles, named people  │
+   │                          and sign-off authority, modules + search queries │
+   │  3 Specification Analyst assumptions, dependencies, statuses,             │
+   │                          non-functional, integration and UI requirements  │
+   │  4 Req. Extractor        per module: retrieve → requirements with         │
+   │                          priority, acceptance criteria + citations        │
+   │  5 Coverage Sweep        excerpts no requirement cites → missed reqs      │
+   │  6 Reviewer              duplicates, conflicts, ambiguity, open questions │
+   │  7 Refiner               flagged reqs + their cited evidence → rewritten  │
+   │  8 Access Analyst        role-based access requirements + access matrix   │
+   │  9 Use Case Writer       detailed use cases for the final requirements    │
+   │ 10 Writer                objective, overview, purpose of the initiative   │
+   └────────────────────────────────────────────────────────────────────────────┘
                               │
-                FRD.md · FRD.docx · frd.json · steps/*.json
+     code assigns IDs, merges open questions, builds the 21-section template
+                              │
+                FRD.docx · FRD.md · frd.json · steps/*.json
 ```
+
+### The FRD template
+
+Every FRD follows the same 21 sections:
+
+| # | Section | Built from |
+| --- | --- | --- |
+| 1 | Document Information | Project title, `--prepared-by` / **Prepared by**, generation date, version 1.0 (Draft) |
+| 2 | Stakeholder – Document Signoff Authority | People the sources name as approvers |
+| 3 | Team Contact Information | Other named people, with titles and emails as written in the sources |
+| 4 | Revision History | The generated draft |
+| 5 | Objective | Writer |
+| 6 | Overview, with 6.1 Purpose, 6.2 In-Scope, 6.3 Out-of-Scope | Writer and Scope Analyst |
+| 7 | End User Roles | Scope Analyst: role, description, responsibilities, access or restrictions |
+| 8 | Functional Requirements Summary | `FR-001`...: description, priority, module, acceptance criteria, source |
+| 9 | Role-Based Access Summary | Access Analyst: `RBAR-001`... |
+| 10 | Detailed Functional Requirements | Use Case Writer: `10.x Use Case` with user story, roles, preconditions, actions, business rules, expected result, exceptions, traceability |
+| 11 | Role-Based Access Matrix | Access Analyst |
+| 12 | Assumptions (`AS-001`...) and Dependencies (`DEP-001`...) | Specification Analyst |
+| 13 | Status Definitions | Specification Analyst |
+| 14 | Priority Definitions | Fixed definitions, the source-term mapping and counts per priority |
+| 15 | Non-Functional Requirements | Specification Analyst (`NFR-001`...), plus the categories the sources do not cover |
+| 16 | Integration Requirements | Specification Analyst, one table per integrated system |
+| 17 | UI and Interaction Guidelines | Specification Analyst, including any existing UI standard the sources name |
+| 18 | Open Questions and Clarifications | `OQ-001`...: merged from every agent, plus requirements without sources or acceptance criteria and missing sign-off authorities |
+| 19 | Requirements Traceability Matrix | Each FR and RBAR with sources, related use cases and status (Confirmed, Pending clarification, No source: to be confirmed) |
+| 20 | Acceptance Criteria | Every requirement's criteria |
+| 21 | Document Signoff | Approvers, with status Pending |
+
+Two appendices follow: the source documents that the references point to, and any input files that were not used. The web preview shows the same document as the Word file.
 
 Techniques used:
 
@@ -153,7 +191,8 @@ Techniques used:
 - **Grounding and traceability.** Every excerpt carries an ID (such as `D2-001`). Requirements must cite IDs, citations to unknown IDs are removed and flagged, and the FRD ends with a traceability matrix.
 - **Structured outputs.** Each agent returns JSON that is validated with Pydantic. Invalid replies are sent back to the model to repair.
 - **Critique and refine.** The Reviewer flags problems and only the flagged requirements are rewritten. Conflicts between sources become open questions instead of being decided silently.
-- **Deterministic rendering.** The LLM produces content, and code builds the document layout, IDs and tables.
+- **Deterministic rendering.** The LLM produces content, and code builds the template: section order, numbering, IDs, tables, priority definitions and traceability status.
+- **Merged open questions.** Questions raised by any agent are de-duplicated and merged, keeping every related requirement, source and owner.
 - **Resilience on free tiers.** Primary/fallback models with exponential backoff on 429s, plus an on-disk cache of validated replies so an interrupted run resumes without spending requests again.
 
 ## Project structure
@@ -165,14 +204,14 @@ SpecForge/
 │   ├── __main__.py          CLI: python -m specforge
 │   ├── web.py               FastAPI server, job queue and downloads: python -m specforge.web
 │   ├── static/index.html    web UI (one file, vanilla JavaScript, no build step)
-│   ├── pipeline.py          runs the eight stages and writes the outputs
+│   ├── pipeline.py          runs the ten stages and writes the outputs
 │   ├── ingest.py            input collection, validation, text extraction and chunking
 │   ├── retriever.py         hybrid BM25 + embedding search fused with RRF
-│   ├── agents.py            the seven agents
+│   ├── agents.py            the ten agents, ID assignment and open-question merging
 │   ├── prompts.py           prompt catalog loader and CLI: python -m specforge.prompts
 │   ├── llm.py               OpenRouter client: fallback, backoff, JSON repair, cache, cancellation
 │   ├── models.py            Pydantic schemas for the FRD and its parts
-│   ├── render.py            Word and Markdown rendering
+│   ├── render.py            the 21-section template: Word, Markdown and web preview
 │   └── config.py            settings and .env loading
 ├── prompts/
 │   ├── runtime/             prompts sent to the model, one folder per prompt, one file per version
@@ -245,7 +284,7 @@ To roll back, bump again and paste the older text, so history only moves forward
 
 ### Prompt catalog
 
-The tables and texts below are generated from `prompts/` by `sync-readme`, and `check` fails when they drift, so they always match what the application uses. The runtime prompts are professional, implementation-ready instructions and were kept word for word when they moved into the catalog (version 1.0.0), so results and cached replies are unchanged.
+The tables and texts below are generated from `prompts/` by `sync-readme`, and `check` fails when they drift, so they always match what the application uses. Version 1.0.0 of each original runtime prompt is the text that was in the code when the catalog was created; later versions record each change and why.
 
 <!-- BEGIN GENERATED: prompt catalog. Edit prompts/ and run `python -m specforge.prompts sync-readme`. -->
 
@@ -255,25 +294,43 @@ These are sent to the model by the application. Templates are filled with `str.f
 
 | Prompt | Version | Kind | Purpose | Used by | Output |
 | --- | --- | --- | --- | --- | --- |
-| `document_reader` | 1.0.0 | template | For document sets larger than full_context_words, condenses each part into dense notes under fixed FRD headings, keeping excerpt IDs so later agents can still cite sources. Not called when the whole set fits the context budget. | specforge/agents.py: document_reader() | Plain-text notes (LLM.complete) |
-| `scope_analyst` | 1.0.0 | template | Establishes the project context from the whole material (or the reader's notes): title, purpose, scope in and out, stakeholders, assumptions, constraints, and the functional modules with search queries written in the documents' own vocabulary. | specforge/agents.py: scope_analyst() | JSON validated as models.ProjectContext |
-| `requirements_extractor` | 1.0.0 | template | Runs once per module on the passages retrieved for it and extracts every supported functional requirement, one behaviour each, with priority, acceptance criteria and citations. | specforge/agents.py: requirements_extractor() | JSON validated as models.RequirementList |
-| `coverage_sweep` | 1.0.0 | template | Re-reads passages that no requirement cites yet and extracts only the requirements the existing set misses, assigning each to a module. | specforge/agents.py: coverage_sweep() | JSON validated as models.RequirementList |
-| `reviewer` | 1.0.0 | template | Reviews the numbered requirement set as a whole and reports duplicates to merge, requirements that are ambiguous, conflicting, incomplete or untestable, and open questions for stakeholders. | specforge/agents.py: reviewer() | JSON validated as models.Review |
-| `refiner` | 1.0.0 | template | Rewrites only the requirements the reviewer flagged, using their cited and related passages; issues the sources cannot resolve are explained in notes for stakeholders. | specforge/agents.py: refiner() | JSON validated as models.RequirementList |
-| `writer` | 1.0.0 | template | Writes the executive summary and a short overview of each module from the project purpose and the final requirements, without adding features. | specforge/agents.py: writer() | JSON validated as models.Summary |
+| `document_reader` | 1.1.0 | template | For document sets larger than full_context_words, condenses each part into dense notes under fixed FRD headings, keeping excerpt IDs so later agents can still cite sources. Not called when the whole set fits the context budget. | specforge/agents.py: document_reader() | Plain-text notes (LLM.complete) |
+| `scope_analyst` | 2.0.0 | template | Establishes the project context from the whole material (or the reader's notes): title, purpose, scope in and out, user roles with responsibilities and access, named people and sign-off authorities, open questions, and the functional modules with search queries in the documents' own vocabulary. | specforge/agents.py: scope_analyst() | JSON validated as models.ProjectContext |
+| `specification_analyst` | 1.0.0 | template | Captures the FRD's supporting sections from the whole material: assumptions, dependencies, workflow statuses, non-functional requirements, integrations, UI guidelines and any existing UI standard, plus open questions in these areas. | specforge/agents.py: specification_analyst() | JSON validated as models.Specification |
+| `requirements_extractor` | 2.0.0 | template | Runs once per module on the passages retrieved for it and extracts every supported functional requirement, one behaviour each, with priority, acceptance criteria and citations. | specforge/agents.py: requirements_extractor() | JSON validated as models.RequirementList |
+| `coverage_sweep` | 2.0.0 | template | Re-reads passages that no requirement cites yet and extracts only the requirements the existing set misses, assigning each to a module. | specforge/agents.py: coverage_sweep() | JSON validated as models.RequirementList |
+| `reviewer` | 2.0.0 | template | Reviews the numbered requirement set as a whole and reports duplicates to merge, requirements that are ambiguous, conflicting, incomplete or untestable, and open questions for stakeholders. | specforge/agents.py: reviewer() | JSON validated as models.Review |
+| `refiner` | 2.0.0 | template | Rewrites only the requirements the reviewer flagged, using their cited and related passages; issues the sources cannot resolve are explained in notes for stakeholders. | specforge/agents.py: refiner() | JSON validated as models.RequirementList |
+| `access_analyst` | 1.0.0 | template | Defines role-based access: testable authorization requirements (RBAR) and a matrix of each role's scope, allowed actions and restrictions, consistent with the functional requirements and supported by the sources. | specforge/agents.py: access_analyst() | JSON validated as models.AccessModel |
+| `use_case_writer` | 1.0.0 | template | Expands the final functional requirements into detailed use cases: user story, roles, preconditions, step-by-step actions, business rules, expected result, exception handling and source traceability. | specforge/agents.py: use_case_writer() | JSON validated as models.UseCaseList |
+| `writer` | 2.0.0 | template | Writes the Objective (initiative and document purpose, and how each audience uses the document), the Overview and the Purpose of the Initiative from the project context and final requirements, without adding features. | specforge/agents.py: writer() | JSON validated as models.Summary |
 | `json_repair` | 1.0.0 | template | Sent back to the model when a reply is not valid JSON or does not match the expected schema, asking it to fix the structure without dropping content. | specforge/llm.py: LLM.complete_json() | Corrected JSON in the originally requested shape |
-| `grounding` | 1.0.0 | fragment | Shared instruction that keeps every agent tied to the source material: no invented features, values, roles or rules, and empty fields where the sources are silent. | Inserted as {grounding} into document_reader, scope_analyst, requirements_extractor, coverage_sweep and refiner | Text fragment |
-| `requirement_fields` | 1.0.0 | fragment | Shared definition of the fields every extracted requirement must carry: a 3-8 word title, one testable 'The system shall' sentence, actor, priority rules, inputs and outputs, business rules, 2-4 acceptance criteria and at least one source citation. | Inserted as {fields} into requirements_extractor and coverage_sweep | Text fragment |
+| `grounding` | 1.1.0 | fragment | Shared instruction that keeps every agent tied to the source material: no invented features, values, roles, people or rules; empty fields where the sources are silent; source terminology preserved; conflicts reported as open questions. | Inserted as {grounding} into every agent template except the writer and JSON repair | Text fragment |
+| `priority_rules` | 1.0.0 | fragment | Shared rule for assigning Critical, High, Medium or Low only when the sources support it, mapping MoSCoW-style and P1-P3 terms, and recording the source wording; otherwise To be confirmed. | Inserted as {priority_rules} into requirements_extractor, coverage_sweep, refiner and access_analyst | Text fragment |
+| `requirement_fields` | 2.0.0 | fragment | Shared definition of the fields every extracted requirement must carry: a 3-8 word title, one testable 'The system shall' sentence, actor, priority with its source basis, inputs and outputs, business rules, 2-4 measurable acceptance criteria and at least one source citation. | Inserted as {fields} into requirements_extractor and coverage_sweep | Text fragment |
 
 <details>
-<summary><code>document_reader</code> v1.0.0: Agent 1: Document Reader</summary>
+<summary><code>document_reader</code> v1.1.0: Agent 1: Document Reader</summary>
 
 **Purpose:** For document sets larger than full_context_words, condenses each part into dense notes under fixed FRD headings, keeping excerpt IDs so later agents can still cite sources. Not called when the whole set fits the context budget.  
 **Used by:** specforge/agents.py: document_reader()  
 **Variables:** `{part}`, `{parts}`, `{grounding}`, `{excerpts}`  
 **Output:** Plain-text notes (LLM.complete)  
-**File:** `prompts/runtime/document_reader/1.0.0.toml`
+**File:** `prompts/runtime/document_reader/1.1.0.toml`
+
+```text
+You are a business analyst reading part {part} of {parts} of a project's source documents.
+
+Write dense notes on everything in this part that matters for a Functional Requirements Document, under these headings:
+Purpose and goals; Users, roles and permissions; People, approvers and contacts; Features and behaviours; Business rules and exact values; Priorities; Workflow statuses; Data and records; Integrations and external systems; User interface; Non-functional needs and constraints; Assumptions and dependencies; Explicitly out of scope; Open issues or conflicts.
+
+Put the excerpt IDs in brackets after each point, e.g. [D1-004]. Skip a heading when this part says nothing about it. {grounding}
+
+EXCERPTS:
+{excerpts}
+```
+
+Previous version 1.0.0 (2026-10-01): Initial version, moved unchanged from the source code into the prompt catalog.
 
 ```text
 You are a business analyst reading part {part} of {parts} of a project's source documents.
@@ -290,13 +347,43 @@ EXCERPTS:
 </details>
 
 <details>
-<summary><code>scope_analyst</code> v1.0.0: Agent 2: Scope Analyst</summary>
+<summary><code>scope_analyst</code> v2.0.0: Agent 2: Scope Analyst</summary>
 
-**Purpose:** Establishes the project context from the whole material (or the reader's notes): title, purpose, scope in and out, stakeholders, assumptions, constraints, and the functional modules with search queries written in the documents' own vocabulary.  
+**Purpose:** Establishes the project context from the whole material (or the reader's notes): title, purpose, scope in and out, user roles with responsibilities and access, named people and sign-off authorities, open questions, and the functional modules with search queries in the documents' own vocabulary.  
 **Used by:** specforge/agents.py: scope_analyst()  
 **Variables:** `{grounding}`, `{title_hint}`, `{material}`  
 **Output:** JSON validated as models.ProjectContext  
-**File:** `prompts/runtime/scope_analyst/1.0.0.toml`
+**File:** `prompts/runtime/scope_analyst/2.0.0.toml`
+
+```text
+You are a senior business analyst preparing a Functional Requirements Document (FRD).
+Read the source material below, whatever domain it is from, and establish the project context:
+
+- title and purpose: the system or initiative name, and 2-3 sentences on the business problem, the goal and the expected outcome.
+- scope_in and scope_out: the functionality, modules, integrations and workflows the sources include, and those they explicitly exclude.
+- roles: every end-user role or external actor that uses the system, with a description, its responsibilities and any access level or restriction the sources state.
+- people: named individuals in the sources (authors, approvers, sponsors, team members), with their title and contact details exactly as written. Set signoff_authority to true only when the sources say the person approves or signs off. Never invent names, titles or contact details.
+- modules: the functional modules of the system, meaning distinct capability areas named after what the system does in this domain, not after document sections. Use as many as the material needs, usually 3 to 10; a small system may need only 2. Every feature in the material should belong to one module. For each module write 3 or 4 short search queries in the vocabulary of the sources; they will be used to retrieve the evidence for that module's requirements.
+- open_questions: conflicting statements, unclear scope or missing information about the above that stakeholders must resolve.
+
+Cite the supporting excerpt IDs in every "sources" list. {grounding}
+
+Return only a JSON object of this shape:
+{{
+  "title": "system or project name",
+  "purpose": "2-3 sentences",
+  "scope_in": ["capability in scope"],
+  "scope_out": ["item explicitly out of scope"],
+  "roles": [{{"role": "role name", "description": "", "responsibilities": [""], "access": "", "sources": ["D1-001"]}}],
+  "people": [{{"name": "", "title": "", "email": "", "phone": "", "signoff_authority": false, "sources": ["D1-001"]}}],
+  "modules": [{{"name": "module name", "description": "what this module does", "search_queries": ["query"]}}],
+  "open_questions": [{{"question": "", "sources": ["D1-001"], "owner": ""}}]
+}}
+{title_hint}
+{material}
+```
+
+Previous version 1.0.0 (2026-10-01): Initial version, moved unchanged from the source code into the prompt catalog.
 
 ```text
 You are a senior business analyst preparing a Functional Requirements Document (FRD).
@@ -324,13 +411,77 @@ Return only a JSON object of this shape:
 </details>
 
 <details>
-<summary><code>requirements_extractor</code> v1.0.0: Agent 3: Requirements Extractor</summary>
+<summary><code>specification_analyst</code> v1.0.0: Agent 3: Specification Analyst</summary>
+
+**Purpose:** Captures the FRD's supporting sections from the whole material: assumptions, dependencies, workflow statuses, non-functional requirements, integrations, UI guidelines and any existing UI standard, plus open questions in these areas.  
+**Used by:** specforge/agents.py: specification_analyst()  
+**Variables:** `{title}`, `{grounding}`, `{material}`  
+**Output:** JSON validated as models.Specification  
+**File:** `prompts/runtime/specification_analyst/1.0.0.toml`
+
+```text
+You are a senior business analyst completing the supporting sections of the Functional Requirements Document for {title}.
+Read the source material below and capture everything it says in these areas. Leave a list empty when the sources say nothing about it.
+
+- assumptions: statements the sources treat as given or assume to be true.
+- dependencies: systems, teams, data, decisions, approvals, timelines or budgets the initiative depends on, each with a short description.
+- statuses: workflow or record statuses (for example of an order, request or appointment), with a description and the transition or condition that leads to each, where stated.
+- non_functional: non-functional requirements, each with a category (Performance, Security, Availability, Scalability, Reliability, Usability, Accessibility, Maintainability, Auditability, Data protection, or another fitting name). Regulatory and compliance obligations belong here. Keep exact targets and never add targets the sources do not give.
+- integrations: external systems the solution exchanges data with, with the purpose, data exchanged, direction, authentication, trigger or frequency, error handling and dependency, where the sources say.
+- ui_guidelines: user-interface requirements by area (Navigation, Screens, Forms, Tables, Filters, Search, Pagination, Buttons and actions, Role-based visibility, Validation messages, Common behaviour).
+- ui_standards: if the sources say to follow an existing application's UI standards or design system, state that in one sentence that names it; otherwise leave it empty.
+- open_questions: conflicting statements or missing information in these areas that stakeholders must resolve.
+
+Cite the supporting excerpt IDs in every "sources" list. {grounding}
+
+Return only a JSON object of this shape:
+{{
+  "assumptions": [{{"assumption": "", "sources": ["D1-001"]}}],
+  "dependencies": [{{"dependency": "", "description": "", "sources": []}}],
+  "statuses": [{{"status": "", "description": "", "transition": "", "sources": []}}],
+  "non_functional": [{{"category": "", "requirement": "", "sources": []}}],
+  "integrations": [{{"system": "", "purpose": "", "data_exchanged": "", "direction": "", "authentication": "", "trigger": "", "error_handling": "", "dependency": "", "sources": []}}],
+  "ui_guidelines": [{{"area": "", "guideline": "", "sources": []}}],
+  "ui_standards": "",
+  "open_questions": [{{"question": "", "sources": [], "owner": ""}}]
+}}
+
+{material}
+```
+
+</details>
+
+<details>
+<summary><code>requirements_extractor</code> v2.0.0: Agent 4: Requirements Extractor</summary>
 
 **Purpose:** Runs once per module on the passages retrieved for it and extracts every supported functional requirement, one behaviour each, with priority, acceptance criteria and citations.  
 **Used by:** specforge/agents.py: requirements_extractor()  
-**Variables:** `{module}`, `{title}`, `{description}`, `{others}`, `{fields}`, `{grounding}`, `{excerpts}`  
+**Variables:** `{module}`, `{title}`, `{description}`, `{others}`, `{fields}`, `{priority_rules}`, `{grounding}`, `{excerpts}`  
 **Output:** JSON validated as models.RequirementList  
-**File:** `prompts/runtime/requirements_extractor/1.0.0.toml`
+**File:** `prompts/runtime/requirements_extractor/2.0.0.toml`
+
+```text
+You are a business analyst writing the functional requirements for the "{module}" module of {title}.
+
+Module scope: {description}
+Other modules (leave their requirements to them): {others}
+
+Extract every functional requirement for this module that the source excerpts support. A functional requirement is a behaviour the system must perform. Split compound statements so each requirement covers one behaviour. When several excerpts state the same requirement, or a later comment, email or change request clarifies it, write it once in its clarified form and cite every supporting excerpt. Put authorization conditions (who may view, create, change or approve something) in business_rules.
+
+{fields}
+
+{priority_rules}
+
+{grounding} If the excerpts hold nothing for this module, return an empty list.
+
+Return only a JSON object of this shape:
+{{"requirements": [{{"title": "", "description": "The system shall ...", "actor": "", "priority": "To be confirmed", "priority_basis": "", "inputs": [], "outputs": [], "business_rules": [], "acceptance_criteria": [], "sources": ["D1-001"]}}]}}
+
+SOURCE EXCERPTS:
+{excerpts}
+```
+
+Previous version 1.0.0 (2026-10-01): Initial version, moved unchanged from the source code into the prompt catalog.
 
 ```text
 You are a business analyst writing the functional requirements for the "{module}" module of {title}.
@@ -354,13 +505,37 @@ SOURCE EXCERPTS:
 </details>
 
 <details>
-<summary><code>coverage_sweep</code> v1.0.0: Agent 4: Coverage Sweep</summary>
+<summary><code>coverage_sweep</code> v2.0.0: Agent 5: Coverage Sweep</summary>
 
 **Purpose:** Re-reads passages that no requirement cites yet and extracts only the requirements the existing set misses, assigning each to a module.  
 **Used by:** specforge/agents.py: coverage_sweep()  
-**Variables:** `{title}`, `{modules}`, `{fields}`, `{grounding}`, `{existing}`, `{excerpts}`  
+**Variables:** `{title}`, `{modules}`, `{fields}`, `{priority_rules}`, `{grounding}`, `{existing}`, `{excerpts}`  
 **Output:** JSON validated as models.RequirementList  
-**File:** `prompts/runtime/coverage_sweep/1.0.0.toml`
+**File:** `prompts/runtime/coverage_sweep/2.0.0.toml`
+
+```text
+You are a business analyst checking that the FRD for {title} misses nothing.
+
+No requirement cites the excerpts below yet. Many may be background with no requirements in them. Extract only the functional requirements they contain that the existing requirements do not already cover, and assign each to the best-fitting module: {modules}.
+
+{fields}
+- module: one of the module names above, spelled exactly.
+
+{priority_rules}
+
+{grounding} Returning an empty list is fine when there is nothing new.
+
+Return only a JSON object of this shape:
+{{"requirements": [{{"module": "", "title": "", "description": "The system shall ...", "actor": "", "priority": "To be confirmed", "priority_basis": "", "inputs": [], "outputs": [], "business_rules": [], "acceptance_criteria": [], "sources": ["D1-001"]}}]}}
+
+EXISTING REQUIREMENTS:
+{existing}
+
+UNCITED EXCERPTS:
+{excerpts}
+```
+
+Previous version 1.0.0 (2026-10-01): Initial version, moved unchanged from the source code into the prompt catalog.
 
 ```text
 You are a business analyst checking that the FRD for {title} misses nothing.
@@ -385,13 +560,34 @@ UNCITED EXCERPTS:
 </details>
 
 <details>
-<summary><code>reviewer</code> v1.0.0: Agent 5: Reviewer</summary>
+<summary><code>reviewer</code> v2.0.0: Agent 6: Reviewer</summary>
 
 **Purpose:** Reviews the numbered requirement set as a whole and reports duplicates to merge, requirements that are ambiguous, conflicting, incomplete or untestable, and open questions for stakeholders.  
 **Used by:** specforge/agents.py: reviewer()  
 **Variables:** `{title}`, `{requirements}`  
 **Output:** JSON validated as models.Review  
-**File:** `prompts/runtime/reviewer/1.0.0.toml`
+**File:** `prompts/runtime/reviewer/2.0.0.toml`
+
+```text
+You are a requirements quality reviewer for the FRD of {title}.
+
+Review the requirements below as a set and report:
+1. merges: requirements that describe the same behaviour or rule, even when worded differently or placed in different modules. Name the one to keep and the ones to drop.
+2. issues: requirements that are ambiguous (vague words such as "fast", "easy", "appropriate"), conflicting with another requirement, incomplete (missing a rule, limit or outcome), untestable, or whose acceptance criteria are not measurable. Give a concrete note saying what is wrong.
+3. open_questions: decisions the stakeholders must make before build, such as conflicting statements the sources do not resolve, missing values and unclear scope. For each give the related requirement IDs, the excerpt IDs it comes from (taken from those requirements' sources), and the owner if the sources name who should decide.
+
+Report only real problems; an empty list is fine.
+
+Return only a JSON object of this shape:
+{{"merges": [{{"keep": "FR-001", "drop": ["FR-007"], "reason": ""}}],
+ "issues": [{{"req_id": "FR-002", "type": "ambiguous|conflict|incomplete|untestable", "note": ""}}],
+ "open_questions": [{{"question": "", "related_requirements": ["FR-001"], "sources": ["D1-004"], "owner": ""}}]}}
+
+REQUIREMENTS:
+{requirements}
+```
+
+Previous version 1.0.0 (2026-10-01): Initial version, moved unchanged from the source code into the prompt catalog.
 
 ```text
 You are a requirements quality reviewer for the FRD of {title}.
@@ -415,13 +611,35 @@ REQUIREMENTS:
 </details>
 
 <details>
-<summary><code>refiner</code> v1.0.0: Agent 6: Refiner</summary>
+<summary><code>refiner</code> v2.0.0: Agent 7: Refiner</summary>
 
 **Purpose:** Rewrites only the requirements the reviewer flagged, using their cited and related passages; issues the sources cannot resolve are explained in notes for stakeholders.  
 **Used by:** specforge/agents.py: refiner()  
-**Variables:** `{grounding}`, `{flagged}`, `{excerpts}`  
+**Variables:** `{priority_rules}`, `{grounding}`, `{flagged}`, `{excerpts}`  
 **Output:** JSON validated as models.RequirementList  
-**File:** `prompts/runtime/refiner/1.0.0.toml`
+**File:** `prompts/runtime/refiner/2.0.0.toml`
+
+```text
+You are a business analyst fixing requirements that a reviewer flagged.
+
+For each requirement below, rewrite it to resolve the reviewer's note using the source excerpts: make it specific, testable and unambiguous, add the missing rule or value, and make its acceptance criteria measurable. Keep its id.
+If the sources cannot resolve the issue (for example two sources conflict), keep the best supported wording and put a one-sentence explanation in "notes" so a stakeholder can decide. Do not resolve the conflict yourself.
+
+{priority_rules}
+
+{grounding}
+
+Return only a JSON object of this shape, with one entry per flagged requirement:
+{{"requirements": [{{"id": "FR-001", "title": "", "description": "The system shall ...", "actor": "", "priority": "To be confirmed", "priority_basis": "", "inputs": [], "outputs": [], "business_rules": [], "acceptance_criteria": [], "sources": ["D1-001"], "notes": ["..."]}}]}}
+
+FLAGGED REQUIREMENTS (with reviewer notes):
+{flagged}
+
+SOURCE EXCERPTS:
+{excerpts}
+```
+
+Previous version 1.0.0 (2026-10-01): Initial version, moved unchanged from the source code into the prompt catalog.
 
 ```text
 You are a business analyst fixing requirements that a reviewer flagged.
@@ -444,13 +662,113 @@ SOURCE EXCERPTS:
 </details>
 
 <details>
-<summary><code>writer</code> v1.0.0: Agent 7: Writer</summary>
+<summary><code>access_analyst</code> v1.0.0: Agent 8: Access Analyst</summary>
 
-**Purpose:** Writes the executive summary and a short overview of each module from the project purpose and the final requirements, without adding features.  
+**Purpose:** Defines role-based access: testable authorization requirements (RBAR) and a matrix of each role's scope, allowed actions and restrictions, consistent with the functional requirements and supported by the sources.  
+**Used by:** specforge/agents.py: access_analyst()  
+**Variables:** `{title}`, `{roles}`, `{requirements}`, `{priority_rules}`, `{grounding}`, `{excerpts}`  
+**Output:** JSON validated as models.AccessModel  
+**File:** `prompts/runtime/access_analyst/1.0.0.toml`
+
+```text
+You are a business analyst defining role-based access for the Functional Requirements Document of {title}.
+
+USER ROLES:
+{roles}
+
+FUNCTIONAL REQUIREMENTS:
+{requirements}
+
+Using the requirements and the source excerpts below, define:
+- access_requirements: authorization requirements only, each a testable "The system shall ..." statement about which role may or may not access, view, create, modify, delete, assign or approve something. Do not restate functional behaviour that has no access condition; that is already in the functional requirements. Give its module, priority, priority_basis, 2-3 measurable acceptance criteria and the supporting excerpt IDs.
+- matrix: one row per role with its access scope, the actions it is allowed and its restrictions. It must agree with the access requirements and the functional requirements.
+- open_questions: access rules the sources leave unclear or contradictory, with the related requirement IDs.
+
+{priority_rules}
+
+Base every entry on what the requirements and excerpts say about roles and permissions; never grant or deny access the sources do not support. {grounding}
+
+Return only a JSON object of this shape:
+{{"access_requirements": [{{"requirement": "The system shall ...", "module": "", "priority": "To be confirmed", "priority_basis": "", "acceptance_criteria": [""], "sources": ["D1-001"]}}],
+ "matrix": [{{"role": "", "scope": "", "allowed_actions": [""], "restrictions": [""], "sources": ["D1-001"]}}],
+ "open_questions": [{{"question": "", "related_requirements": ["FR-001"], "sources": [], "owner": ""}}]}}
+
+SOURCE EXCERPTS:
+{excerpts}
+```
+
+</details>
+
+<details>
+<summary><code>use_case_writer</code> v1.0.0: Agent 9: Use Case Writer</summary>
+
+**Purpose:** Expands the final functional requirements into detailed use cases: user story, roles, preconditions, step-by-step actions, business rules, expected result, exception handling and source traceability.  
+**Used by:** specforge/agents.py: use_case_writer()  
+**Variables:** `{title}`, `{roles}`, `{statuses}`, `{grounding}`, `{requirements}`, `{excerpts}`  
+**Output:** JSON validated as models.UseCaseList  
+**File:** `prompts/runtime/use_case_writer/1.0.0.toml`
+
+```text
+You are a business analyst writing the detailed use cases of the Functional Requirements Document for {title}.
+
+User roles: {roles}
+Workflow statuses: {statuses}
+
+Group the functional requirements below into use cases: one use case per distinct user goal, each covering one or more related requirements. Every requirement must belong to at least one use case. For each use case give:
+- name: a short verb phrase, e.g. "Book an appointment".
+- module: the module of its requirements.
+- user_story: "As a [user role], I want to [action] so that [business outcome]."
+- roles: the user roles involved.
+- preconditions: what must be true before it can start.
+- actions: the user and system interactions, one step per item, in order.
+- business_rules: the rules, validations and authorization conditions that apply.
+- expected_result: the outcome after successful execution.
+- exceptions: how the system behaves when validation fails, access is denied, required information is missing or the operation cannot complete.
+- requirements: the IDs of the requirements it covers.
+- sources: the excerpt IDs that support it.
+
+Take everything from the requirements and the source excerpts. Where they do not describe a precondition, result or exception, leave it empty instead of inventing one. {grounding}
+
+Return only a JSON object of this shape:
+{{"use_cases": [{{"name": "", "module": "", "user_story": "As a ..., I want to ... so that ...", "roles": [""], "preconditions": [""], "actions": ["The user ...", "The system ..."], "business_rules": [""], "expected_result": "", "exceptions": [""], "requirements": ["FR-001"], "sources": ["D1-001"]}}]}}
+
+REQUIREMENTS:
+{requirements}
+
+SOURCE EXCERPTS:
+{excerpts}
+```
+
+</details>
+
+<details>
+<summary><code>writer</code> v2.0.0: Agent 10: Writer</summary>
+
+**Purpose:** Writes the Objective (initiative and document purpose, and how each audience uses the document), the Overview and the Purpose of the Initiative from the project context and final requirements, without adding features.  
 **Used by:** specforge/agents.py: writer()  
-**Variables:** `{title}`, `{purpose}`, `{requirements}`  
+**Variables:** `{title}`, `{purpose}`, `{scope}`, `{requirements}`  
 **Output:** JSON validated as models.Summary  
-**File:** `prompts/runtime/writer/1.0.0.toml`
+**File:** `prompts/runtime/writer/2.0.0.toml`
+
+```text
+You are a technical writer finishing the Functional Requirements Document for {title}.
+
+Project purpose: {purpose}
+In scope: {scope}
+
+REQUIREMENTS BY MODULE:
+{requirements}
+
+Based only on the information above, and adding no new features, write for business readers:
+- objective: a paragraph stating the objective of the initiative and the purpose of this document, then a paragraph on how stakeholders, developers, testers, reviewers and approvers will use it. Separate the paragraphs with a blank line.
+- overview: a concise overview of the proposed system or initiative and its main capabilities.
+- initiative_purpose: the business purpose of the initiative and its expected outcome.
+
+Return only a JSON object of this shape:
+{{"objective": "", "overview": "", "initiative_purpose": ""}}
+```
+
+Previous version 1.0.0 (2026-10-01): Initial version, moved unchanged from the source code into the prompt catalog.
 
 ```text
 You are a technical writer finishing the Functional Requirements Document for {title}.
@@ -496,12 +814,18 @@ Return the corrected JSON only, with no commentary and no code fences. Keep all 
 </details>
 
 <details>
-<summary><code>grounding</code> v1.0.0: Grounding rule</summary>
+<summary><code>grounding</code> v1.1.0: Grounding rule</summary>
 
-**Purpose:** Shared instruction that keeps every agent tied to the source material: no invented features, values, roles or rules, and empty fields where the sources are silent.  
-**Used by:** Inserted as {grounding} into document_reader, scope_analyst, requirements_extractor, coverage_sweep and refiner  
+**Purpose:** Shared instruction that keeps every agent tied to the source material: no invented features, values, roles, people or rules; empty fields where the sources are silent; source terminology preserved; conflicts reported as open questions.  
+**Used by:** Inserted as {grounding} into every agent template except the writer and JSON repair  
 **Output:** Text fragment  
-**File:** `prompts/runtime/grounding/1.0.0.toml`
+**File:** `prompts/runtime/grounding/1.1.0.toml`
+
+```text
+Use only the source material. Do not invent features, values, roles, people or rules it does not support. When the sources are silent on something, leave that field empty. Keep the sources' own terminology, and never silently resolve statements that conflict: report them as open questions.
+```
+
+Previous version 1.0.0 (2026-10-01): Initial version, moved unchanged from the source code into the prompt catalog.
 
 ```text
 Use only the source material. Do not invent features, values, roles or rules it does not support. When the sources are silent on something, leave that field empty.
@@ -510,12 +834,40 @@ Use only the source material. Do not invent features, values, roles or rules it 
 </details>
 
 <details>
-<summary><code>requirement_fields</code> v1.0.0: Requirement field guide</summary>
+<summary><code>priority_rules</code> v1.0.0: Priority rules</summary>
 
-**Purpose:** Shared definition of the fields every extracted requirement must carry: a 3-8 word title, one testable 'The system shall' sentence, actor, priority rules, inputs and outputs, business rules, 2-4 acceptance criteria and at least one source citation.  
+**Purpose:** Shared rule for assigning Critical, High, Medium or Low only when the sources support it, mapping MoSCoW-style and P1-P3 terms, and recording the source wording; otherwise To be confirmed.  
+**Used by:** Inserted as {priority_rules} into requirements_extractor, coverage_sweep, refiner and access_analyst  
+**Output:** Text fragment  
+**File:** `prompts/runtime/priority_rules/1.0.0.toml`
+
+```text
+Priority rules: use "Critical", "High", "Medium" or "Low" only when the sources state or clearly imply the priority, mapping the sources' own scale: critical, blocker or legally required -> Critical; must have, mandatory or P1 -> High; should have or P2 -> Medium; could have, nice to have or P3 -> Low. Otherwise use "To be confirmed". Put the source wording the priority comes from in priority_basis, for example "Must have (BRD 4.2)"; leave it empty for "To be confirmed".
+```
+
+</details>
+
+<details>
+<summary><code>requirement_fields</code> v2.0.0: Requirement field guide</summary>
+
+**Purpose:** Shared definition of the fields every extracted requirement must carry: a 3-8 word title, one testable 'The system shall' sentence, actor, priority with its source basis, inputs and outputs, business rules, 2-4 measurable acceptance criteria and at least one source citation.  
 **Used by:** Inserted as {fields} into requirements_extractor and coverage_sweep  
 **Output:** Text fragment  
-**File:** `prompts/runtime/requirement_fields/1.0.0.toml`
+**File:** `prompts/runtime/requirement_fields/2.0.0.toml`
+
+```text
+For each requirement:
+- title: 3-8 words.
+- description: one "The system shall ..." sentence that is specific, testable, unambiguous and written from a business perspective. Keep exact values from the sources (limits, time windows, amounts, formats) and their terminology. Rewrite informal wording professionally without changing its meaning.
+- actor: the user role or external system that triggers or uses it.
+- priority and priority_basis: follow the priority rules.
+- inputs / outputs: data the behaviour consumes and produces, if the sources say.
+- business_rules: rules, validations and authorization conditions that constrain it, if the sources say.
+- acceptance_criteria: 2-4 measurable criteria that describe observable system behaviour, in Given/When/Then form where it fits. Each must check this requirement.
+- sources: IDs of the excerpts that support it, e.g. ["D1-004"]. At least one.
+```
+
+Previous version 1.0.0 (2026-10-01): Initial version, moved unchanged from the source code into the prompt catalog.
 
 ```text
 For each requirement:
@@ -551,6 +903,7 @@ Requests that shaped the current codebase, in order; requests that were later re
 | `dev-12-git-and-prompt-management` | 1.0.0 | implemented | 2026-10-08 | Add Git version control and prompt management |
 | `dev-13-publish-to-github` | 1.1.0 | implemented | 2026-10-08 | Publish the project to GitHub |
 | `dev-14-prompt-history-update` | 1.1.0 | implemented | 2026-10-08 | Update the development prompt history |
+| `dev-15-frd-template` | 1.0.0 | implemented | 2026-10-08 | Generate FRDs in the 21-section enterprise template |
 
 <details>
 <summary><code>dev-01-rag-agent-chain-design</code> v1.1.0: Design a RAG agent chain that generates an FRD</summary>
@@ -1005,19 +1358,351 @@ remove the reverted prompts and add the recents prompts
 
 </details>
 
+<details>
+<summary><code>dev-15-frd-template</code> v1.0.0: Generate FRDs in the 21-section enterprise template</summary>
+
+**Purpose:** Make every generated FRD follow a fixed 21-section enterprise template with strict source traceability and no invented content.  
+**Outcome:** Release 2.0.0: the 21-section template, Specification Analyst, Access Analyst and Use Case Writer agents, template-scale priorities, FR/RBAR/UC/AS/DEP/NFR/OQ identifiers, merged open questions, traceability status and a server-rendered preview.  
+**File:** `prompts/development/dev-15-frd-template/1.0.0.toml`
+
+```text
+Generate a professional Functional Requirements Document (FRD) using the following structure and level of detail.
+
+The document must be based strictly on the provided business requirements, specifications, meeting notes, emails, change requests, and other source materials. Do not invent requirements or unsupported information. Where information is missing, conflicting, or unclear, explicitly identify it as an open question, assumption, or dependency.
+
+Document structure:
+
+1. Document Information
+
+Include:
+- Document Title
+- Prepared By
+- Date
+- Version
+
+2. Stakeholder – Document Signoff Authority
+
+Include:
+- Stakeholder Name
+- Title
+- Sign-off Date
+- Contact Information
+
+3. Team Contact Information
+
+Include:
+- Name
+- Title
+- Email
+
+4. Revision History
+
+Create a revision history table with:
+- Version
+- Date
+- Author
+- Description of Change
+
+5. Objective
+
+Clearly define the objective of the initiative and explain the purpose of the Functional Requirements Document.
+
+Explain how the document will be used by stakeholders, developers, testers, reviewers, and approvers.
+
+6. Overview
+
+Provide a concise overview of the proposed system, feature, integration, or business initiative.
+
+6.1 Purpose of the Initiative
+
+Explain the business purpose and expected outcome.
+
+6.2 In-Scope
+
+Clearly list the functionality, modules, integrations, workflows, and requirements covered by the document.
+
+6.3 Out-of-Scope
+
+Clearly identify functionality, modules, integrations, or activities that are explicitly excluded.
+
+7. End User Roles
+
+Identify all relevant user roles.
+
+For each role, provide:
+- Role
+- Description
+- Responsibilities
+- Relevant access or restrictions, where applicable
+
+8. Functional Requirements Summary
+
+Create a structured requirements table containing:
+
+- Requirement ID
+- Requirement Description
+- Priority
+- Module
+- Acceptance Criteria
+- Source Reference
+
+Assign unique IDs such as FR-001, FR-002, FR-003, etc.
+
+Requirements must be:
+- Specific
+- Testable
+- Unambiguous
+- Traceable to the source material
+- Written from a functional/business perspective
+
+If source comments or stakeholder clarifications exist, incorporate them appropriately and preserve traceability.
+
+9. Role-Based Access Summary
+
+Create a role-based access requirements table containing:
+
+- Requirement ID
+- Authorization Requirement
+- Priority
+- Module
+- Acceptance Criteria
+- Source Reference
+
+Use identifiers such as RBAR-001, RBAR-002, etc.
+
+Clearly define what each role can access, view, create, modify, delete, assign, or otherwise perform.
+
+10. Detailed Functional Requirements
+
+Expand the high-level functional requirements into detailed use cases.
+
+For each major use case, use the following structure:
+
+10.x Use Case: [Use Case Name]
+
+User Story:
+As a [user role], I want to [action] so that [business outcome].
+
+User Roles:
+List the roles involved in the use case.
+
+Preconditions:
+List the conditions that must be satisfied before the action can occur.
+
+Actions Performed:
+Describe the expected user and system interactions step by step.
+
+Business Rules:
+Describe relevant rules, restrictions, validations, and authorization requirements.
+
+Expected Result:
+Describe the expected outcome after successful execution.
+
+Exception / Error Handling:
+Describe expected behavior when validation fails, access is denied, required information is missing, or an operation cannot be completed.
+
+Source Traceability:
+Identify the source document, section, requirement, meeting note, email, or other evidence supporting the use case.
+
+11. Role-Based Access Matrix
+
+Create a matrix containing:
+
+- Role
+- Access Scope
+- Allowed Actions
+- Expected Restrictions
+
+Ensure that the matrix is consistent with the functional requirements and detailed use cases.
+
+12. Assumptions and Dependencies
+
+12.1 Assumptions
+
+Create an assumptions table containing:
+
+- ID
+- Assumption
+- Source Reference, where applicable
+
+Use identifiers such as AS-001, AS-002, etc.
+
+12.2 Dependencies
+
+Create a dependency table containing:
+
+- ID
+- Dependency
+- Description
+- Source Reference, where applicable
+
+Use identifiers such as DEP-001, DEP-002, etc.
+
+13. Status Definitions
+
+If the system contains workflow statuses, define each status using:
+
+- Status
+- Description
+- Applicable Transition or Condition, where available
+
+14. Priority Definitions
+
+Define the meaning of each requirement priority.
+
+Use categories such as:
+- Critical
+- High
+- Medium
+- Low
+
+Do not assign a priority unless it is supported by the source material. If priority is not specified, mark it as requiring confirmation.
+
+15. Non-Functional Requirements
+
+Document non-functional requirements where supported by the source material.
+
+Consider:
+- Performance
+- Security
+- Availability
+- Scalability
+- Reliability
+- Usability
+- Accessibility
+- Maintainability
+- Auditability
+- Data protection
+
+Do not invent specific technical targets unless they are provided by the source material.
+
+16. Integration Requirements
+
+Document all system integrations.
+
+For each integration, include where applicable:
+- Integrated System
+- Purpose
+- Data exchanged
+- Integration direction
+- Authentication/authorization requirements
+- Trigger or frequency
+- Error handling
+- Dependency
+- Source Reference
+
+17. UI and Interaction Guidelines
+
+Document UI requirements where supported by the source material.
+
+Include:
+- Navigation
+- Screens/pages
+- Forms
+- Tables
+- Filters
+- Search
+- Pagination
+- Buttons/actions
+- Role-based visibility
+- Validation messages
+- Common UI behavior
+
+If the source specifies that the existing application's UI standards should be followed, explicitly document this rather than inventing a new design system.
+
+18. Open Questions and Clarifications
+
+Create a table containing:
+
+- ID
+- Question / Clarification Required
+- Related Requirement
+- Source
+- Status
+- Owner, if known
+
+Include unresolved stakeholder comments, conflicting requirements, and information gaps.
+
+19. Requirements Traceability Matrix
+
+Create a traceability matrix containing:
+
+- Requirement ID
+- Requirement
+- Source Document / Source Reference
+- Related Use Case
+- Acceptance Criteria
+- Status
+
+Every functional requirement should be traceable back to its source.
+
+20. Acceptance Criteria
+
+Ensure each functional requirement has measurable acceptance criteria.
+
+Acceptance criteria should describe observable system behavior and should be suitable for validation by testers and stakeholders.
+
+21. Document Signoff
+
+Include a final signoff section containing:
+
+- Stakeholder Name
+- Role / Title
+- Approval Status
+- Sign-off Date
+- Comments
+
+Document Generation Rules:
+
+- Maintain a professional enterprise documentation style.
+- Use consistent numbering throughout the document.
+- Use structured tables wherever appropriate.
+- Use unique IDs for requirements, assumptions, dependencies, and open questions.
+- Preserve terminology from the source documents.
+- Do not silently resolve conflicting stakeholder comments.
+- Clearly distinguish confirmed requirements from assumptions and open questions.
+- Do not add functionality that is not supported by the source material.
+- Convert informal or poorly written requirements into clear, professional, testable requirements without changing their intended meaning.
+- Remove duplicate requirements while maintaining traceability to all relevant sources.
+- Maintain complete source traceability.
+- Ensure acceptance criteria directly correspond to the associated requirement.
+- Ensure the role-based access matrix is consistent with the functional requirements.
+- Ensure detailed use cases are consistent with the requirements summary.
+- Ensure all sections use consistent terminology and identifiers.
+- Where information is unavailable, use "Not specified in source material" or identify it as an open question rather than making an assumption.
+- The final document should be suitable for stakeholder review, development, testing, approval, and future maintenance.
+
+it should follow this template
+```
+
+</details>
+
 #### Prompt version history
 
 | Prompt | Version | Date | Changes |
 | --- | --- | --- | --- |
+| `document_reader` | 1.1.0 | 2026-10-08 | Adds headings for permissions, people and approvers, priorities, statuses, UI, and assumptions and dependencies, so large document sets keep everything the template needs (FRD template (dev-15)). |
 | `document_reader` | 1.0.0 | 2026-10-01 | Initial version, moved unchanged from the source code into the prompt catalog. |
+| `scope_analyst` | 2.0.0 | 2026-10-08 | MAJOR: also returns user roles with responsibilities and access, named people with sign-off authority and contact details, and open questions; assumptions and constraints move to the specification analyst (FRD template (dev-15)). |
 | `scope_analyst` | 1.0.0 | 2026-10-01 | Initial version, moved unchanged from the source code into the prompt catalog. |
+| `specification_analyst` | 1.0.0 | 2026-10-08 | Initial version: captures the template's supporting sections from the whole material (FRD template (dev-15)). |
+| `requirements_extractor` | 2.0.0 | 2026-10-08 | MAJOR: replies use the template priority scale with priority_basis (new {priority_rules} placeholder); duplicate statements and later clarifications are merged into one requirement citing every source; authorization conditions go into business rules (FRD template (dev-15)). |
 | `requirements_extractor` | 1.0.0 | 2026-10-01 | Initial version, moved unchanged from the source code into the prompt catalog. |
+| `coverage_sweep` | 2.0.0 | 2026-10-08 | MAJOR: replies use the template priority scale with priority_basis (new {priority_rules} placeholder) (FRD template (dev-15)). |
 | `coverage_sweep` | 1.0.0 | 2026-10-01 | Initial version, moved unchanged from the source code into the prompt catalog. |
+| `reviewer` | 2.0.0 | 2026-10-08 | MAJOR: open questions become objects with related requirement IDs, sources and owner, for the open-questions table; differently worded duplicates must be merged; unmeasurable acceptance criteria are flagged as issues (FRD template (dev-15)). |
 | `reviewer` | 1.0.0 | 2026-10-01 | Initial version, moved unchanged from the source code into the prompt catalog. |
+| `refiner` | 2.0.0 | 2026-10-08 | MAJOR: replies use the template priority scale with priority_basis (new {priority_rules} placeholder) and FR-001 style IDs; conflicts must be explained, never resolved (FRD template (dev-15)). |
 | `refiner` | 1.0.0 | 2026-10-01 | Initial version, moved unchanged from the source code into the prompt catalog. |
+| `access_analyst` | 1.0.0 | 2026-10-08 | Initial version: produces the role-based access requirements (authorization rules only) and the role-based access matrix (FRD template (dev-15)). |
+| `use_case_writer` | 1.0.0 | 2026-10-08 | Initial version: expands the functional requirements into detailed use cases in the template's structure (FRD template (dev-15)). |
+| `writer` | 2.0.0 | 2026-10-08 | MAJOR: writes the template's Objective, Overview and Purpose of the Initiative instead of an executive summary and module overviews (FRD template (dev-15)). |
 | `writer` | 1.0.0 | 2026-10-01 | Initial version, moved unchanged from the source code into the prompt catalog. |
 | `json_repair` | 1.0.0 | 2026-10-01 | Initial version, moved unchanged from the source code into the prompt catalog. |
+| `grounding` | 1.1.0 | 2026-10-08 | Adds people to what must not be invented, asks to keep the sources' terminology, and requires conflicts to be reported as open questions instead of resolved silently (FRD template (dev-15)). |
 | `grounding` | 1.0.0 | 2026-10-01 | Initial version, moved unchanged from the source code into the prompt catalog. |
+| `priority_rules` | 1.0.0 | 2026-10-08 | Initial version: the template's priority scale, stored once and shared by every agent that assigns priorities (FRD template (dev-15)). |
+| `requirement_fields` | 2.0.0 | 2026-10-08 | MAJOR: priority moves to the template scale with a priority_basis field (rules in the priority_rules fragment); descriptions must be unambiguous and business-focused; acceptance criteria must be measurable and observable (FRD template (dev-15)). |
 | `requirement_fields` | 1.0.0 | 2026-10-01 | Initial version, moved unchanged from the source code into the prompt catalog. |
 | `dev-01-rag-agent-chain-design` | 1.1.0 | 2026-10-08 | Rewritten as a professional prompt with the same intent: names the deliverables (architecture, retrieval approach, accuracy techniques, tool choices) and what the FRD must contain. |
 | `dev-01-rag-agent-chain-design` | 1.0.0 | 2026-10-01 | Original request as written. |
@@ -1046,6 +1731,7 @@ remove the reverted prompts and add the recents prompts
 | `dev-13-publish-to-github` | 1.0.0 | 2026-10-08 | Original request as written. The later request "push it to github" (2026-10-08) asked to publish new commits to the same repository; it is recorded here instead of as a duplicate prompt. |
 | `dev-14-prompt-history-update` | 1.1.0 | 2026-10-08 | Rewritten professionally with the same intent: defines which prompts count as reverted, how to number and de-duplicate new entries, and the validation to run. |
 | `dev-14-prompt-history-update` | 1.0.0 | 2026-10-08 | Original request as written. |
+| `dev-15-frd-template` | 1.0.0 | 2026-10-08 | Recorded as written: it was already a complete, implementation-ready specification. |
 
 <!-- END GENERATED: prompt catalog -->
 
@@ -1141,6 +1827,6 @@ git push origin main --tags
 
 ## Free-tier limits and runtime notes
 
-OpenRouter free models allow 50 requests per day (1,000 per day once the account has $10 of credit). A typical run makes roughly 8 to 15 calls. When every model is rate-limited, the client backs off before giving up; retrying resumes from cached steps.
+OpenRouter free models allow 50 requests per day (1,000 per day once the account has $10 of credit). A typical run makes roughly `modules + 8` calls, about 12 to 20. When every model is rate-limited, the client backs off before giving up; retrying resumes from cached steps.
 
 The web server keeps jobs in memory. Uploaded files and results are stored under `runs/<job-id>/`, but the job list resets when the server restarts.

@@ -1,0 +1,21 @@
+id = "document_reader"
+version = "1.1.0"
+title = "Agent 1: Document Reader"
+kind = "template"
+date = "2026-10-08"
+purpose = "For document sets larger than full_context_words, condenses each part into dense notes under fixed FRD headings, keeping excerpt IDs so later agents can still cite sources. Not called when the whole set fits the context budget."
+used_by = "specforge/agents.py: document_reader()"
+variables = ["part", "parts", "grounding", "excerpts"]
+output = "Plain-text notes (LLM.complete)"
+changes = "Adds headings for permissions, people and approvers, priorities, statuses, UI, and assumptions and dependencies, so large document sets keep everything the template needs (FRD template (dev-15))."
+
+template = '''
+You are a business analyst reading part {part} of {parts} of a project's source documents.
+
+Write dense notes on everything in this part that matters for a Functional Requirements Document, under these headings:
+Purpose and goals; Users, roles and permissions; People, approvers and contacts; Features and behaviours; Business rules and exact values; Priorities; Workflow statuses; Data and records; Integrations and external systems; User interface; Non-functional needs and constraints; Assumptions and dependencies; Explicitly out of scope; Open issues or conflicts.
+
+Put the excerpt IDs in brackets after each point, e.g. [D1-004]. Skip a heading when this part says nothing about it. {grounding}
+
+EXCERPTS:
+{excerpts}'''

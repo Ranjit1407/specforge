@@ -1,0 +1,12 @@
+id = "priority_rules"
+version = "1.0.0"
+title = "Priority rules"
+kind = "fragment"
+date = "2026-10-08"
+purpose = "Shared rule for assigning Critical, High, Medium or Low only when the sources support it, mapping MoSCoW-style and P1-P3 terms, and recording the source wording; otherwise To be confirmed."
+used_by = "Inserted as {priority_rules} into requirements_extractor, coverage_sweep, refiner and access_analyst"
+output = "Text fragment"
+changes = "Initial version: the template's priority scale, stored once and shared by every agent that assigns priorities (FRD template (dev-15))."
+
+template = '''
+Priority rules: use "Critical", "High", "Medium" or "Low" only when the sources state or clearly imply the priority, mapping the sources' own scale: critical, blocker or legally required -> Critical; must have, mandatory or P1 -> High; should have or P2 -> Medium; could have, nice to have or P3 -> Low. Otherwise use "To be confirmed". Put the source wording the priority comes from in priority_basis, for example "Must have (BRD 4.2)"; leave it empty for "To be confirmed".'''

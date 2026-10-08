@@ -1,0 +1,37 @@
+id = "scope_analyst"
+version = "2.0.0"
+title = "Agent 2: Scope Analyst"
+kind = "template"
+date = "2026-10-08"
+purpose = "Establishes the project context from the whole material (or the reader's notes): title, purpose, scope in and out, user roles with responsibilities and access, named people and sign-off authorities, open questions, and the functional modules with search queries in the documents' own vocabulary."
+used_by = "specforge/agents.py: scope_analyst()"
+variables = ["grounding", "title_hint", "material"]
+output = "JSON validated as models.ProjectContext"
+changes = "MAJOR: also returns user roles with responsibilities and access, named people with sign-off authority and contact details, and open questions; assumptions and constraints move to the specification analyst (FRD template (dev-15))."
+
+template = '''
+You are a senior business analyst preparing a Functional Requirements Document (FRD).
+Read the source material below, whatever domain it is from, and establish the project context:
+
+- title and purpose: the system or initiative name, and 2-3 sentences on the business problem, the goal and the expected outcome.
+- scope_in and scope_out: the functionality, modules, integrations and workflows the sources include, and those they explicitly exclude.
+- roles: every end-user role or external actor that uses the system, with a description, its responsibilities and any access level or restriction the sources state.
+- people: named individuals in the sources (authors, approvers, sponsors, team members), with their title and contact details exactly as written. Set signoff_authority to true only when the sources say the person approves or signs off. Never invent names, titles or contact details.
+- modules: the functional modules of the system, meaning distinct capability areas named after what the system does in this domain, not after document sections. Use as many as the material needs, usually 3 to 10; a small system may need only 2. Every feature in the material should belong to one module. For each module write 3 or 4 short search queries in the vocabulary of the sources; they will be used to retrieve the evidence for that module's requirements.
+- open_questions: conflicting statements, unclear scope or missing information about the above that stakeholders must resolve.
+
+Cite the supporting excerpt IDs in every "sources" list. {grounding}
+
+Return only a JSON object of this shape:
+{{
+  "title": "system or project name",
+  "purpose": "2-3 sentences",
+  "scope_in": ["capability in scope"],
+  "scope_out": ["item explicitly out of scope"],
+  "roles": [{{"role": "role name", "description": "", "responsibilities": [""], "access": "", "sources": ["D1-001"]}}],
+  "people": [{{"name": "", "title": "", "email": "", "phone": "", "signoff_authority": false, "sources": ["D1-001"]}}],
+  "modules": [{{"name": "module name", "description": "what this module does", "search_queries": ["query"]}}],
+  "open_questions": [{{"question": "", "sources": ["D1-001"], "owner": ""}}]
+}}
+{title_hint}
+{material}'''

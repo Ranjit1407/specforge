@@ -1,0 +1,27 @@
+id = "writer"
+version = "2.0.0"
+title = "Agent 10: Writer"
+kind = "template"
+date = "2026-10-08"
+purpose = "Writes the Objective (initiative and document purpose, and how each audience uses the document), the Overview and the Purpose of the Initiative from the project context and final requirements, without adding features."
+used_by = "specforge/agents.py: writer()"
+variables = ["title", "purpose", "scope", "requirements"]
+output = "JSON validated as models.Summary"
+changes = "MAJOR: writes the template's Objective, Overview and Purpose of the Initiative instead of an executive summary and module overviews (FRD template (dev-15))."
+
+template = '''
+You are a technical writer finishing the Functional Requirements Document for {title}.
+
+Project purpose: {purpose}
+In scope: {scope}
+
+REQUIREMENTS BY MODULE:
+{requirements}
+
+Based only on the information above, and adding no new features, write for business readers:
+- objective: a paragraph stating the objective of the initiative and the purpose of this document, then a paragraph on how stakeholders, developers, testers, reviewers and approvers will use it. Separate the paragraphs with a blank line.
+- overview: a concise overview of the proposed system or initiative and its main capabilities.
+- initiative_purpose: the business purpose of the initiative and its expected outcome.
+
+Return only a JSON object of this shape:
+{{"objective": "", "overview": "", "initiative_purpose": ""}}'''

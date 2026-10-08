@@ -1,0 +1,318 @@
+id = "dev-15-frd-template"
+version = "1.0.0"
+title = "Generate FRDs in the 21-section enterprise template"
+kind = "development"
+status = "implemented"
+date = "2026-10-08"
+purpose = "Make every generated FRD follow a fixed 21-section enterprise template with strict source traceability and no invented content."
+outcome = "Release 2.0.0: the 21-section template, Specification Analyst, Access Analyst and Use Case Writer agents, template-scale priorities, FR/RBAR/UC/AS/DEP/NFR/OQ identifiers, merged open questions, traceability status and a server-rendered preview."
+changes = "Recorded as written: it was already a complete, implementation-ready specification."
+
+template = '''
+Generate a professional Functional Requirements Document (FRD) using the following structure and level of detail.
+
+The document must be based strictly on the provided business requirements, specifications, meeting notes, emails, change requests, and other source materials. Do not invent requirements or unsupported information. Where information is missing, conflicting, or unclear, explicitly identify it as an open question, assumption, or dependency.
+
+Document structure:
+
+1. Document Information
+
+Include:
+- Document Title
+- Prepared By
+- Date
+- Version
+
+2. Stakeholder – Document Signoff Authority
+
+Include:
+- Stakeholder Name
+- Title
+- Sign-off Date
+- Contact Information
+
+3. Team Contact Information
+
+Include:
+- Name
+- Title
+- Email
+
+4. Revision History
+
+Create a revision history table with:
+- Version
+- Date
+- Author
+- Description of Change
+
+5. Objective
+
+Clearly define the objective of the initiative and explain the purpose of the Functional Requirements Document.
+
+Explain how the document will be used by stakeholders, developers, testers, reviewers, and approvers.
+
+6. Overview
+
+Provide a concise overview of the proposed system, feature, integration, or business initiative.
+
+6.1 Purpose of the Initiative
+
+Explain the business purpose and expected outcome.
+
+6.2 In-Scope
+
+Clearly list the functionality, modules, integrations, workflows, and requirements covered by the document.
+
+6.3 Out-of-Scope
+
+Clearly identify functionality, modules, integrations, or activities that are explicitly excluded.
+
+7. End User Roles
+
+Identify all relevant user roles.
+
+For each role, provide:
+- Role
+- Description
+- Responsibilities
+- Relevant access or restrictions, where applicable
+
+8. Functional Requirements Summary
+
+Create a structured requirements table containing:
+
+- Requirement ID
+- Requirement Description
+- Priority
+- Module
+- Acceptance Criteria
+- Source Reference
+
+Assign unique IDs such as FR-001, FR-002, FR-003, etc.
+
+Requirements must be:
+- Specific
+- Testable
+- Unambiguous
+- Traceable to the source material
+- Written from a functional/business perspective
+
+If source comments or stakeholder clarifications exist, incorporate them appropriately and preserve traceability.
+
+9. Role-Based Access Summary
+
+Create a role-based access requirements table containing:
+
+- Requirement ID
+- Authorization Requirement
+- Priority
+- Module
+- Acceptance Criteria
+- Source Reference
+
+Use identifiers such as RBAR-001, RBAR-002, etc.
+
+Clearly define what each role can access, view, create, modify, delete, assign, or otherwise perform.
+
+10. Detailed Functional Requirements
+
+Expand the high-level functional requirements into detailed use cases.
+
+For each major use case, use the following structure:
+
+10.x Use Case: [Use Case Name]
+
+User Story:
+As a [user role], I want to [action] so that [business outcome].
+
+User Roles:
+List the roles involved in the use case.
+
+Preconditions:
+List the conditions that must be satisfied before the action can occur.
+
+Actions Performed:
+Describe the expected user and system interactions step by step.
+
+Business Rules:
+Describe relevant rules, restrictions, validations, and authorization requirements.
+
+Expected Result:
+Describe the expected outcome after successful execution.
+
+Exception / Error Handling:
+Describe expected behavior when validation fails, access is denied, required information is missing, or an operation cannot be completed.
+
+Source Traceability:
+Identify the source document, section, requirement, meeting note, email, or other evidence supporting the use case.
+
+11. Role-Based Access Matrix
+
+Create a matrix containing:
+
+- Role
+- Access Scope
+- Allowed Actions
+- Expected Restrictions
+
+Ensure that the matrix is consistent with the functional requirements and detailed use cases.
+
+12. Assumptions and Dependencies
+
+12.1 Assumptions
+
+Create an assumptions table containing:
+
+- ID
+- Assumption
+- Source Reference, where applicable
+
+Use identifiers such as AS-001, AS-002, etc.
+
+12.2 Dependencies
+
+Create a dependency table containing:
+
+- ID
+- Dependency
+- Description
+- Source Reference, where applicable
+
+Use identifiers such as DEP-001, DEP-002, etc.
+
+13. Status Definitions
+
+If the system contains workflow statuses, define each status using:
+
+- Status
+- Description
+- Applicable Transition or Condition, where available
+
+14. Priority Definitions
+
+Define the meaning of each requirement priority.
+
+Use categories such as:
+- Critical
+- High
+- Medium
+- Low
+
+Do not assign a priority unless it is supported by the source material. If priority is not specified, mark it as requiring confirmation.
+
+15. Non-Functional Requirements
+
+Document non-functional requirements where supported by the source material.
+
+Consider:
+- Performance
+- Security
+- Availability
+- Scalability
+- Reliability
+- Usability
+- Accessibility
+- Maintainability
+- Auditability
+- Data protection
+
+Do not invent specific technical targets unless they are provided by the source material.
+
+16. Integration Requirements
+
+Document all system integrations.
+
+For each integration, include where applicable:
+- Integrated System
+- Purpose
+- Data exchanged
+- Integration direction
+- Authentication/authorization requirements
+- Trigger or frequency
+- Error handling
+- Dependency
+- Source Reference
+
+17. UI and Interaction Guidelines
+
+Document UI requirements where supported by the source material.
+
+Include:
+- Navigation
+- Screens/pages
+- Forms
+- Tables
+- Filters
+- Search
+- Pagination
+- Buttons/actions
+- Role-based visibility
+- Validation messages
+- Common UI behavior
+
+If the source specifies that the existing application's UI standards should be followed, explicitly document this rather than inventing a new design system.
+
+18. Open Questions and Clarifications
+
+Create a table containing:
+
+- ID
+- Question / Clarification Required
+- Related Requirement
+- Source
+- Status
+- Owner, if known
+
+Include unresolved stakeholder comments, conflicting requirements, and information gaps.
+
+19. Requirements Traceability Matrix
+
+Create a traceability matrix containing:
+
+- Requirement ID
+- Requirement
+- Source Document / Source Reference
+- Related Use Case
+- Acceptance Criteria
+- Status
+
+Every functional requirement should be traceable back to its source.
+
+20. Acceptance Criteria
+
+Ensure each functional requirement has measurable acceptance criteria.
+
+Acceptance criteria should describe observable system behavior and should be suitable for validation by testers and stakeholders.
+
+21. Document Signoff
+
+Include a final signoff section containing:
+
+- Stakeholder Name
+- Role / Title
+- Approval Status
+- Sign-off Date
+- Comments
+
+Document Generation Rules:
+
+- Maintain a professional enterprise documentation style.
+- Use consistent numbering throughout the document.
+- Use structured tables wherever appropriate.
+- Use unique IDs for requirements, assumptions, dependencies, and open questions.
+- Preserve terminology from the source documents.
+- Do not silently resolve conflicting stakeholder comments.
+- Clearly distinguish confirmed requirements from assumptions and open questions.
+- Do not add functionality that is not supported by the source material.
+- Convert informal or poorly written requirements into clear, professional, testable requirements without changing their intended meaning.
+- Remove duplicate requirements while maintaining traceability to all relevant sources.
+- Maintain complete source traceability.
+- Ensure acceptance criteria directly correspond to the associated requirement.
+- Ensure the role-based access matrix is consistent with the functional requirements.
+- Ensure detailed use cases are consistent with the requirements summary.
+- Ensure all sections use consistent terminology and identifiers.
+- Where information is unavailable, use "Not specified in source material" or identify it as an open question rather than making an assumption.
+- The final document should be suitable for stakeholder review, development, testing, approval, and future maintenance.
+
+it should follow this template'''

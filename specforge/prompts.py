@@ -259,8 +259,8 @@ def _details(p: Prompt, previous: list[Prompt]) -> str:
 
 def readme_section() -> str:
     # Templates in pipeline order, then fragments.
-    pipeline_order = ["document_reader", "scope_analyst", "requirements_extractor", "coverage_sweep",
-                      "reviewer", "refiner", "writer"]
+    pipeline_order = ["document_reader", "scope_analyst", "specification_analyst", "requirements_extractor",
+                      "coverage_sweep", "reviewer", "refiner", "access_analyst", "use_case_writer", "writer"]
     runtime = sorted(latest("runtime"), key=lambda p: (
         p.kind != "template", pipeline_order.index(p.id) if p.id in pipeline_order else len(pipeline_order), p.id))
     development = sorted(latest("development"), key=lambda p: p.id)

@@ -1,0 +1,12 @@
+id = "grounding"
+version = "1.1.0"
+title = "Grounding rule"
+kind = "fragment"
+date = "2026-10-08"
+purpose = "Shared instruction that keeps every agent tied to the source material: no invented features, values, roles, people or rules; empty fields where the sources are silent; source terminology preserved; conflicts reported as open questions."
+used_by = "Inserted as {grounding} into every agent template except the writer and JSON repair"
+output = "Text fragment"
+changes = "Adds people to what must not be invented, asks to keep the sources' terminology, and requires conflicts to be reported as open questions instead of resolved silently (FRD template (dev-15))."
+
+template = '''
+Use only the source material. Do not invent features, values, roles, people or rules it does not support. When the sources are silent on something, leave that field empty. Keep the sources' own terminology, and never silently resolve statements that conflict: report them as open questions.'''

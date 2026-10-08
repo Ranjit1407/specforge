@@ -1,0 +1,40 @@
+id = "use_case_writer"
+version = "1.0.0"
+title = "Agent 9: Use Case Writer"
+kind = "template"
+date = "2026-10-08"
+purpose = "Expands the final functional requirements into detailed use cases: user story, roles, preconditions, step-by-step actions, business rules, expected result, exception handling and source traceability."
+used_by = "specforge/agents.py: use_case_writer()"
+variables = ["title", "roles", "statuses", "grounding", "requirements", "excerpts"]
+output = "JSON validated as models.UseCaseList"
+changes = "Initial version: expands the functional requirements into detailed use cases in the template's structure (FRD template (dev-15))."
+
+template = '''
+You are a business analyst writing the detailed use cases of the Functional Requirements Document for {title}.
+
+User roles: {roles}
+Workflow statuses: {statuses}
+
+Group the functional requirements below into use cases: one use case per distinct user goal, each covering one or more related requirements. Every requirement must belong to at least one use case. For each use case give:
+- name: a short verb phrase, e.g. "Book an appointment".
+- module: the module of its requirements.
+- user_story: "As a [user role], I want to [action] so that [business outcome]."
+- roles: the user roles involved.
+- preconditions: what must be true before it can start.
+- actions: the user and system interactions, one step per item, in order.
+- business_rules: the rules, validations and authorization conditions that apply.
+- expected_result: the outcome after successful execution.
+- exceptions: how the system behaves when validation fails, access is denied, required information is missing or the operation cannot complete.
+- requirements: the IDs of the requirements it covers.
+- sources: the excerpt IDs that support it.
+
+Take everything from the requirements and the source excerpts. Where they do not describe a precondition, result or exception, leave it empty instead of inventing one. {grounding}
+
+Return only a JSON object of this shape:
+{{"use_cases": [{{"name": "", "module": "", "user_story": "As a ..., I want to ... so that ...", "roles": [""], "preconditions": [""], "actions": ["The user ...", "The system ..."], "business_rules": [""], "expected_result": "", "exceptions": [""], "requirements": ["FR-001"], "sources": ["D1-001"]}}]}}
+
+REQUIREMENTS:
+{requirements}
+
+SOURCE EXCERPTS:
+{excerpts}'''
