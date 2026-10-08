@@ -1,0 +1,12 @@
+openai>=1.40
+python-dotenv>=1.0
+pypdf>=4.0
+python-docx>=1.1
+rank-bm25>=0.2.2
+fastembed>=0.5
+numpy>=1.26
+pydantic>=2.6
+rich>=13.7
+fastapi>=0.115
+uvicorn>=0.30
+python-multipart>=0.0.9

@@ -1,0 +1,865 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SpecForge | Requirements Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --hero-from: #0a1a33; --hero-to: #12406e;
+    --bg: #f3f5f9; --surface: #ffffff; --surface-2: #f7f9fc; --surface-3: #eef2f7;
+    --border: #e1e7ef; --border-strong: #c8d1de;
+    --text: #0f1b2d; --text-2: #334155; --muted: #64748b;
+    --primary: #0f4c81; --primary-hover: #0b3c66; --primary-soft: #e7eff8; --on-primary: #ffffff;
+    --teal: #0f766e; --teal-soft: #e6f4f2;
+    --success: #15803d; --success-soft: #eaf7ef;
+    --warn: #a15c07; --warn-soft: #fff7e6; --warn-border: #f3d29b;
+    --error: #b42318; --error-soft: #fef3f2; --error-border: #f6c9c4;
+    --shadow-sm: 0 1px 2px rgb(15 27 45 / .06);
+    --shadow: 0 1px 3px rgb(15 27 45 / .06), 0 8px 24px rgb(15 27 45 / .06);
+    --radius: 10px;
+    --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --hero-from: #07111f; --hero-to: #0e2a4a;
+      --bg: #0b1220; --surface: #111a2b; --surface-2: #142036; --surface-3: #1a2842;
+      --border: #22314d; --border-strong: #31456b;
+      --text: #e6edf7; --text-2: #c3cede; --muted: #8f9fb8;
+      --primary: #5b9be0; --primary-hover: #7cb1ea; --primary-soft: #132a49; --on-primary: #08111f;
+      --teal: #3cc4b4; --teal-soft: #0f2e2c;
+      --success: #4ccd7f; --success-soft: #0f2a1b;
+      --warn: #f2b84b; --warn-soft: #2a2010; --warn-border: #5a4316;
+      --error: #f2867b; --error-soft: #2c1414; --error-border: #5b2420;
+      --shadow-sm: 0 1px 2px rgb(0 0 0 / .3);
+      --shadow: 0 1px 3px rgb(0 0 0 / .3), 0 8px 24px rgb(0 0 0 / .25);
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-padding-top: 24px; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.6 var(--font); -webkit-font-smoothing: antialiased; }
+  [hidden] { display: none !important; }
+  h1, h2, h3, h4 { letter-spacing: -.015em; margin: 0; }
+  button, input { font: inherit; color: inherit; }
+  a { color: var(--primary); }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  @media (max-width: 640px) { .wrap { padding: 0 16px; } }
+
+  /* Top bar and hero */
+  .topbar { background: var(--hero-from); color: #fff; border-bottom: 1px solid rgb(255 255 255 / .08); }
+  .topbar .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; gap: 16px; }
+  .logo { display: flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; font-weight: 700; font-size: 17px; letter-spacing: -.01em; }
+  .logo svg { flex: none; }
+  .topbar-tag { font-size: 13px; color: rgb(255 255 255 / .7); }
+  .hero { background: linear-gradient(135deg, var(--hero-from), var(--hero-to)); color: #fff; padding: 48px 0 120px; }
+  .eyebrow { text-transform: uppercase; letter-spacing: .12em; font-size: 12px; font-weight: 600; color: #8cc0f2; margin: 0 0 12px; }
+  .hero h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.15; font-weight: 700; max-width: 720px; }
+  .hero .lead { font-size: 16.5px; color: rgb(255 255 255 / .78); max-width: 680px; margin: 16px 0 0; }
+  .hero-points { list-style: none; display: flex; flex-wrap: wrap; gap: 10px 28px; padding: 0; margin: 28px 0 0; font-size: 14px; color: rgb(255 255 255 / .9); }
+  .hero-points li { display: flex; align-items: center; gap: 8px; }
+  .hero-points li::before { content: ""; width: 18px; height: 18px; border-radius: 50%; background: rgb(140 192 242 / .18);
+    box-shadow: inset 0 0 0 1px rgb(140 192 242 / .5);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M5.5 9.2l2.3 2.3 4.7-5' fill='none' stroke='%238cc0f2' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+
+  main { margin-top: -80px; padding-bottom: 64px; }
+
+  /* Flow indicator */
+  .flow { list-style: none; display: flex; gap: 0; margin: 0 0 16px; padding: 0; background: var(--surface); border: 1px solid var(--border);
+          border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; }
+  .flow li { flex: 1; display: flex; align-items: center; gap: 10px; padding: 14px 18px; font-size: 14px; font-weight: 500; color: var(--muted); position: relative; }
+  .flow li + li { border-left: 1px solid var(--border); }
+  .flow .num { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 600;
+               background: var(--surface-3); color: var(--muted); flex: none; }
+  .flow li.current { color: var(--text); font-weight: 600; }
+  .flow li.current::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--primary); }
+  .flow li.current .num { background: var(--primary); color: var(--on-primary); }
+  .flow li.done .num { background: var(--success); color: #fff; }
+  @media (max-width: 640px) { .flow .label-long { display: none; } .flow li { padding: 12px; justify-content: center; } }
+
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+  .panel-body { padding: 32px; }
+  @media (max-width: 640px) { .panel-body { padding: 20px; } }
+  .panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+  .panel h2 { font-size: 20px; font-weight: 600; }
+  .muted { color: var(--muted); }
+  .sub { color: var(--muted); margin: 6px 0 0; font-size: 14.5px; }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 42px; padding: 0 18px; border-radius: 8px;
+         font-size: 14px; font-weight: 600; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text);
+         cursor: pointer; text-decoration: none; white-space: nowrap; transition: background .15s, border-color .15s, color .15s; }
+  .btn:hover { background: var(--surface-2); border-color: var(--muted); }
+  .btn.primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+  .btn.primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+  .btn.lg { height: 48px; padding: 0 24px; font-size: 15px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn:focus-visible, .icon-btn:focus-visible, .drop:focus-visible, .doc-nav a:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--primary); outline-offset: 2px; }
+  .btn svg { flex: none; }
+
+  /* Upload view */
+  .upload-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; }
+  @media (max-width: 900px) { .upload-grid { grid-template-columns: 1fr; } }
+  .drop { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 40px 20px;
+          border: 1.5px dashed var(--border-strong); border-radius: var(--radius); background: var(--surface-2); cursor: pointer;
+          transition: border-color .15s, background .15s; }
+  .drop:hover, .drop.over { border-color: var(--primary); background: var(--primary-soft); }
+  .drop-icon { width: 52px; height: 52px; border-radius: 12px; display: grid; place-items: center; background: var(--primary-soft); color: var(--primary); margin-bottom: 8px; }
+  .drop.over .drop-icon { background: var(--surface); }
+  .drop strong { font-size: 15.5px; font-weight: 600; }
+  .drop .link { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+  .drop small { color: var(--muted); font-size: 13px; }
+
+  .files { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; }
+  .file { display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+  .ftype { flex: none; width: 40px; height: 40px; border-radius: 8px; display: grid; place-items: center; font: 700 10.5px/1 var(--font); letter-spacing: .03em; }
+  .ftype.pdf { background: var(--error-soft); color: var(--error); }
+  .ftype.docx { background: var(--primary-soft); color: var(--primary); }
+  .ftype.md, .ftype.txt { background: var(--teal-soft); color: var(--teal); }
+  .file-meta { flex: 1; min-width: 0; }
+  .file-name { font-weight: 500; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-size { color: var(--muted); font-size: 12.5px; }
+  .icon-btn { flex: none; width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: 8px; background: none; color: var(--muted); cursor: pointer; }
+  .icon-btn:hover { background: var(--error-soft); color: var(--error); }
+
+  .field { display: block; margin-top: 24px; }
+  .field-label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .field-label span { font-weight: 400; color: var(--muted); }
+  .input { display: block; width: 100%; height: 44px; padding: 0 14px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); }
+  .input::placeholder { color: var(--muted); }
+  .input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+  .form-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--border); }
+  .form-actions .muted { font-size: 13.5px; }
+
+  .guide { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; align-self: start; }
+  .guide h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; margin-bottom: 12px; }
+  .guide h3 + ul { margin-bottom: 22px; }
+  .guide ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; font-size: 14px; color: var(--text-2); }
+  .guide li { display: flex; gap: 10px; align-items: flex-start; }
+  .guide li::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--primary); margin-top: 8px; }
+  .guide ul:last-child { margin-bottom: 0; }
+
+  /* Alerts */
+  .alert { margin-top: 16px; padding: 12px 14px; border-radius: 8px; font-size: 14px; border: 1px solid; display: flex; gap: 10px; align-items: flex-start; }
+  .alert.error { background: var(--error-soft); color: var(--error); border-color: var(--error-border); }
+  .alert.warn { background: var(--warn-soft); color: var(--warn); border-color: var(--warn-border); }
+  .alert.info { background: var(--primary-soft); color: var(--text-2); border-color: var(--border-strong); }
+  .btn.danger { color: var(--error); border-color: var(--error-border); }
+  .btn.danger:hover { background: var(--error-soft); border-color: var(--error); }
+  .btn.danger.solid { background: var(--error); border-color: var(--error); color: var(--surface); }
+  .btn.danger.solid:hover { background: var(--error); filter: brightness(.92); }
+  .head-tools { display: flex; align-items: center; gap: 10px; }
+  .head-tools .btn { height: 34px; padding: 0 14px; font-size: 13.5px; }
+  .confirm-stop { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; margin: 0 0 20px;
+                  padding: 12px 16px; border: 1px solid var(--error-border); background: var(--error-soft); border-radius: 8px; font-size: 14px; color: var(--text-2); }
+  .confirm-stop .btns { display: flex; gap: 8px; }
+  .confirm-stop .btn { height: 36px; padding: 0 14px; font-size: 13.5px; }
+  .alert ul { margin: 0; padding-left: 18px; }
+  .alert strong { display: block; margin-bottom: 2px; }
+
+  /* Progress view */
+  .progress-track { height: 6px; background: var(--surface-3); border-radius: 999px; overflow: hidden; margin: 4px 0 28px; }
+  .progress-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--primary), var(--teal)); border-radius: 999px; transition: width .6s ease; }
+  .progress-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 32px; }
+  @media (max-width: 900px) { .progress-grid { grid-template-columns: 1fr; } .activity { order: -1; } }
+  .elapsed { font: 500 13px var(--mono); color: var(--muted); background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px; }
+  .steps { list-style: none; margin: 0; padding: 0; }
+  .step { display: grid; grid-template-columns: 30px 1fr; gap: 14px; position: relative; padding-bottom: 20px; }
+  .step:not(:last-child)::before { content: ""; position: absolute; left: 14px; top: 32px; bottom: 4px; width: 2px; background: var(--border); }
+  .step.done:not(:last-child)::before { background: var(--success); }
+  .marker { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; border: 2px solid var(--border-strong);
+            background: var(--surface); color: var(--muted); font-size: 12.5px; font-weight: 600; }
+  .step.active .marker { border-color: var(--primary); color: var(--primary); box-shadow: 0 0 0 4px var(--primary-soft); }
+  .step.done .marker { border-color: var(--success); background: var(--success); color: #fff; }
+  .step.error .marker { border-color: var(--error); background: var(--error); color: #fff; }
+  .step.stopped .marker { border-color: var(--muted); background: var(--surface-3); color: var(--muted); }
+  .step-name { font-weight: 600; font-size: 14.5px; padding-top: 4px; }
+  .step:not(.active):not(.done):not(.error) .step-name { color: var(--muted); font-weight: 500; }
+  .step-desc { color: var(--muted); font-size: 13px; }
+  .spinner { width: 14px; height: 14px; border: 2px solid var(--primary-soft); border-top-color: var(--primary); border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } .progress-fill { transition: none; } }
+  .activity { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; align-self: start; }
+  .activity .label { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; color: var(--muted); }
+  .activity h3 { font-size: 17px; margin: 6px 0 4px; }
+  .activity .desc { color: var(--text-2); font-size: 14px; margin: 0; }
+  .activity .detail { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 13.5px; color: var(--muted); overflow-wrap: anywhere; min-height: 22px; }
+  .activity .alert { margin-top: 16px; }
+
+  /* Result view */
+  .result-head { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+  .result-head h2 { font-size: 24px; font-weight: 700; margin-top: 4px; }
+  .result-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 28px; }
+  @media (max-width: 720px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .kpi { border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; background: var(--surface-2); }
+  .kpi b { display: block; font-size: 28px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .kpi span { color: var(--muted); font-size: 13px; font-weight: 500; }
+  .kpi.accent b { color: var(--primary); }
+  .kpi.warn b { color: var(--warn); }
+
+  .doc-layout { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 24px; margin-top: 16px; align-items: start; }
+  @media (max-width: 900px) { .doc-layout { grid-template-columns: 1fr; } .doc-nav { display: none; } }
+  .doc-nav { position: sticky; top: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow-sm); }
+  .doc-nav .label { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; color: var(--muted); padding: 4px 8px 8px; }
+  .doc-nav a { display: flex; justify-content: space-between; gap: 8px; padding: 7px 8px; border-radius: 6px; color: var(--text-2); text-decoration: none; font-size: 13.5px; }
+  .doc-nav a:hover { background: var(--surface-2); color: var(--text); }
+  .doc-nav a .count { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .doc-nav .indent { padding-left: 18px; }
+
+  .doc { padding: 36px 40px; }
+  @media (max-width: 640px) { .doc { padding: 22px 18px; } }
+  .doc section + section { margin-top: 40px; padding-top: 32px; border-top: 1px solid var(--border); }
+  .doc h3 { font-size: 19px; font-weight: 600; margin-bottom: 14px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .doc h3 .num { color: var(--primary); font-variant-numeric: tabular-nums; }
+  .doc h4 { font-size: 13px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; margin: 20px 0 8px; }
+  .doc p { margin: 0 0 12px; color: var(--text-2); }
+  .doc ul.plain { margin: 0; padding-left: 20px; color: var(--text-2); }
+  .doc ul.plain li { margin-bottom: 6px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; background: var(--surface-2); }
+  th, td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  td:first-child { font-weight: 600; white-space: nowrap; }
+
+  .module-intro { color: var(--muted) !important; }
+  .req { border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; margin-top: 12px; background: var(--surface); }
+  .req-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .req-id { font: 600 12px var(--mono); color: var(--primary); background: var(--primary-soft); padding: 3px 8px; border-radius: 6px; }
+  .req-title { font-weight: 600; font-size: 15px; flex: 1; min-width: 160px; }
+  .chip { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; border: 1px solid transparent; }
+  .chip.Must { background: var(--primary); color: var(--on-primary); }
+  .chip.Should { background: var(--teal-soft); color: var(--teal); border-color: color-mix(in srgb, var(--teal) 30%, transparent); }
+  .chip.Could { background: var(--surface-3); color: var(--muted); }
+  .req-desc { margin: 10px 0 0 !important; color: var(--text) !important; }
+  .req-block { margin-top: 12px; }
+  .req-block .k { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
+  .req-block ol, .req-block ul { margin: 0; padding-left: 20px; font-size: 14px; color: var(--text-2); }
+  .req-block li { margin-bottom: 4px; }
+  .req-foot { display: flex; gap: 6px 18px; flex-wrap: wrap; margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border); font-size: 12.5px; color: var(--muted); }
+  .req-foot b { color: var(--text-2); font-weight: 600; }
+  .note { margin-top: 12px; display: flex; gap: 8px; padding: 10px 12px; border-radius: 8px; background: var(--warn-soft); border: 1px solid var(--warn-border); color: var(--warn); font-size: 13.5px; }
+  .note b { white-space: nowrap; }
+  .empty { padding: 16px; border: 1px dashed var(--border-strong); border-radius: 8px; color: var(--muted); font-size: 14px; text-align: center; }
+  .questions { margin: 0; padding: 0; list-style: none; counter-reset: q; display: grid; gap: 10px; }
+  .questions li { counter-increment: q; display: grid; grid-template-columns: 30px 1fr; gap: 10px; padding: 12px 14px; border: 1px solid var(--warn-border); background: var(--warn-soft); border-radius: 8px; color: var(--text-2); font-size: 14.5px; }
+  .questions li::before { content: counter(q); width: 24px; height: 24px; border-radius: 50%; background: var(--warn); color: var(--surface); display: grid; place-items: center; font-size: 12px; font-weight: 700; }
+
+  footer { border-top: 1px solid var(--border); padding: 24px 0 40px; color: var(--muted); font-size: 13px; }
+  footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+
+  @media print {
+    .topbar, .hero, .flow, .doc-nav, .result-actions, footer { display: none !important; }
+    main { margin: 0; } .doc-layout { grid-template-columns: 1fr; } .panel { box-shadow: none; border: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="wrap">
+    <a class="logo" href="/" aria-label="SpecForge home">
+      <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect width="30" height="30" rx="7" fill="#1f6fc0"/><path d="M9 7.5h8.5l4 4V22a.5.5 0 0 1-.5.5H9a.5.5 0 0 1-.5-.5V8a.5.5 0 0 1 .5-.5z" fill="none" stroke="#fff" stroke-width="1.7"/><path d="M11.5 14h7M11.5 17h7M11.5 20h4.5" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/></svg>
+      SpecForge
+    </a>
+    <span class="topbar-tag">Requirements Studio</span>
+  </div>
+</div>
+
+<section class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Functional Requirements</p>
+    <h1>From source documents to a review-ready FRD</h1>
+    <p class="lead">Upload business requirements, specifications, meeting notes or correspondence. SpecForge analyses the material and produces a structured Functional Requirements Document with acceptance criteria and full source traceability.</p>
+    <ul class="hero-points">
+      <li>Every requirement traced to its source</li>
+      <li>Reviewed for conflicts and gaps</li>
+      <li>Export to Word, Markdown or JSON</li>
+    </ul>
+  </div>
+</section>
+
+<main class="wrap">
+  <ol class="flow" id="flow" aria-label="Progress">
+    <li><span class="num">1</span><span>Upload<span class="label-long"> documents</span></span></li>
+    <li><span class="num">2</span><span>Analysis</span></li>
+    <li><span class="num">3</span><span>Review<span class="label-long"> &amp; export</span></span></li>
+  </ol>
+
+  <!-- Upload -->
+  <section id="view-upload" class="panel" aria-labelledby="upload-title">
+    <div class="panel-body">
+      <div class="panel-head">
+        <div>
+          <h2 id="upload-title">Upload source documents</h2>
+          <p class="sub">Add everything that describes the system. The more complete the material, the more complete the FRD.</p>
+        </div>
+      </div>
+      <div class="upload-grid">
+        <div>
+          <div class="drop" id="drop" role="button" tabindex="0" aria-describedby="drop-hint">
+            <div class="drop-icon">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M20 15v3.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5V15"/></svg>
+            </div>
+            <strong>Drag and drop files, or <span class="link">browse</span></strong>
+            <small id="drop-hint">PDF, Word, Markdown or plain text</small>
+          </div>
+          <input type="file" id="file-input" multiple hidden>
+          <ul class="files" id="file-list" aria-label="Selected documents"></ul>
+          <div id="upload-errors" hidden></div>
+
+          <label class="field" for="title">
+            <span class="field-label">Project name <span>(optional)</span></span>
+            <input class="input" type="text" id="title" maxlength="120" placeholder="Taken from the documents if left blank" autocomplete="off">
+          </label>
+
+          <div class="form-actions">
+            <button class="btn primary lg" id="generate" type="button" disabled>Generate FRD</button>
+            <span class="muted" id="file-summary">No documents selected</span>
+          </div>
+        </div>
+
+        <aside class="guide" aria-label="Guidance">
+          <h3>What to include</h3>
+          <ul>
+            <li>Business requirement documents and briefs</li>
+            <li>Workshop and stakeholder meeting notes</li>
+            <li>Emails and change requests</li>
+            <li>Existing specifications or process descriptions</li>
+          </ul>
+          <h3>What you receive</h3>
+          <ul>
+            <li>Scope, stakeholders, assumptions and constraints</li>
+            <li>Requirements grouped by module, with priorities and acceptance criteria</li>
+            <li>Open questions where sources conflict or are silent</li>
+            <li>A traceability matrix back to your documents</li>
+          </ul>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- Progress -->
+  <section id="view-progress" class="panel" aria-labelledby="progress-title" hidden>
+    <div class="panel-body">
+      <div class="panel-head">
+        <div>
+          <h2 id="progress-title">Analysing your documents</h2>
+          <p class="sub" id="progress-files"></p>
+        </div>
+        <div class="head-tools">
+          <span class="elapsed" id="elapsed" aria-label="Elapsed time">0:00</span>
+          <button class="btn danger" id="stop" type="button" hidden>
+            <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><rect width="10" height="10" rx="2" fill="currentColor"/></svg>
+            Stop
+          </button>
+        </div>
+      </div>
+      <div class="confirm-stop" id="confirm-stop" role="alertdialog" aria-labelledby="confirm-stop-text" hidden>
+        <span id="confirm-stop-text">Stop this run? Completed steps are saved and reused if you run it again.</span>
+        <div class="btns">
+          <button class="btn danger solid" id="confirm-stop-yes" type="button">Stop run</button>
+          <button class="btn" id="confirm-stop-no" type="button">Keep running</button>
+        </div>
+      </div>
+      <div class="progress-track" role="progressbar" aria-label="Overall progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <div class="progress-grid">
+        <ol class="steps" id="steps"></ol>
+        <aside class="activity" aria-live="polite">
+          <div class="label" id="activity-label">Current step</div>
+          <h3 id="activity-title">Starting</h3>
+          <p class="desc" id="activity-desc">Preparing your request</p>
+          <div class="detail" id="activity-detail"></div>
+          <div class="alert warn" id="busy" hidden></div>
+        </aside>
+      </div>
+      <div id="run-error" hidden></div>
+      <div class="form-actions" id="run-actions" hidden>
+        <button class="btn primary" id="retry" type="button">Try again</button>
+        <button class="btn" id="restart-from-error" type="button">Start over</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Result -->
+  <section id="view-result" hidden>
+    <div class="panel">
+      <div class="panel-body">
+        <div class="result-head">
+          <div>
+            <p class="eyebrow" style="color: var(--primary); margin: 0">Functional Requirements Document</p>
+            <h2 id="result-title"></h2>
+            <p class="sub" id="result-sub"></p>
+          </div>
+          <div class="result-actions" id="downloads"></div>
+        </div>
+        <div class="kpis" id="kpis"></div>
+      </div>
+    </div>
+    <div class="doc-layout">
+      <nav class="doc-nav" id="doc-nav" aria-label="Document contents"></nav>
+      <article class="panel doc" id="doc"></article>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>SpecForge Requirements Studio</span>
+    <span>Review generated requirements with your stakeholders before sign-off.</span>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const VIEWS = ["upload", "progress", "result"];
+  const state = { config: null, files: [], jobId: null, source: null, timer: null, stage: 0, finished: false };
+
+  function el(tag, props = {}, ...children) {
+    const node = document.createElement(tag);
+    for (const [key, value] of Object.entries(props)) {
+      if (key === "class") node.className = value;
+      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
+      else if (value !== false && value != null) node.setAttribute(key, value === true ? "" : value);
+    }
+    for (const child of children.flat()) {
+      if (child != null && child !== false && child !== "") node.append(child instanceof Node ? child : String(child));
+    }
+    return node;
+  }
+
+  const ext = (name) => (name.match(/\.[^.]+$/) || [""])[0].toLowerCase();
+  const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  const formatSize = (b) => b < 1024 ? `${b} B` : b < 1048576 ? `${Math.round(b / 1024)} KB` : `${(b / 1048576).toFixed(1)} MB`;
+  const formatTime = (s) => { s = Math.max(0, Math.floor(s)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
+
+  function show(view) {
+    const current = VIEWS.indexOf(view);
+    VIEWS.forEach((v) => { $(`view-${v}`).hidden = v !== view; });
+    document.querySelectorAll("#flow li").forEach((li, i) => {
+      li.classList.toggle("done", i < current);
+      li.classList.toggle("current", i === current);
+      li.querySelector(".num").textContent = i < current ? "✓" : String(i + 1);
+      if (i === current) li.setAttribute("aria-current", "step"); else li.removeAttribute("aria-current");
+    });
+    window.scrollTo({ top: 0 });
+  }
+
+  async function api(path, options) {
+    const res = await fetch(path, options);
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(typeof body.detail === "string" ? body.detail : `Request failed (${res.status})`);
+    return body;
+  }
+
+  function alertBox(kind, title, body) {
+    return el("div", { class: `alert ${kind}`, role: "alert" }, el("div", {}, title ? el("strong", {}, title) : "", body));
+  }
+
+  // ---------- Upload ----------
+  function addFiles(list) {
+    const { accept, max_files, max_file_mb } = state.config;
+    const errors = [];
+    for (const file of list) {
+      if (!accept.includes(ext(file.name))) errors.push(`${file.name} is not a supported file type.`);
+      else if (file.size > max_file_mb * 1048576) errors.push(`${file.name} is larger than ${max_file_mb} MB.`);
+      else if (file.size === 0) errors.push(`${file.name} is empty.`);
+      else if (state.files.some((f) => f.name === file.name && f.size === file.size)) continue;
+      else if (state.files.length >= max_files) { errors.push(`You can upload up to ${max_files} documents.`); break; }
+      else state.files.push(file);
+    }
+    showUploadErrors(errors);
+    renderFiles();
+  }
+
+  function showUploadErrors(errors) {
+    const box = $("upload-errors");
+    box.replaceChildren(...(errors.length ? [alertBox("error", errors.length > 1 ? "Some files were not added" : "",
+      errors.length > 1 ? el("ul", {}, errors.map((e) => el("li", {}, e))) : errors[0])] : []));
+    box.hidden = errors.length === 0;
+  }
+
+  function renderFiles() {
+    $("file-list").replaceChildren(...state.files.map((file, i) => {
+      const type = ext(file.name).slice(1);
+      return el("li", { class: "file" },
+        el("span", { class: `ftype ${type}`, "aria-hidden": "true" }, type.toUpperCase()),
+        el("div", { class: "file-meta" },
+          el("div", { class: "file-name", title: file.name }, file.name),
+          el("div", { class: "file-size" }, formatSize(file.size))),
+        el("button", { class: "icon-btn", type: "button", "aria-label": `Remove ${file.name}`,
+          onclick: () => { state.files.splice(i, 1); renderFiles(); } }, "✕"));
+    }));
+    const total = state.files.reduce((s, f) => s + f.size, 0);
+    $("file-summary").textContent = state.files.length ? `${plural(state.files.length, "document")} · ${formatSize(total)}` : "No documents selected";
+    $("generate").disabled = state.files.length === 0;
+  }
+
+  const drop = $("drop"), input = $("file-input");
+  drop.addEventListener("click", () => input.click());
+  drop.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); input.click(); } });
+  input.addEventListener("change", () => { addFiles(input.files); input.value = ""; });
+  for (const type of ["dragenter", "dragover"]) drop.addEventListener(type, (e) => { e.preventDefault(); drop.classList.add("over"); });
+  for (const type of ["dragleave", "drop"]) drop.addEventListener(type, (e) => { e.preventDefault(); drop.classList.remove("over"); });
+  drop.addEventListener("drop", (e) => addFiles(e.dataTransfer.files));
+  // Stop the browser from navigating away when a file is dropped outside the drop zone.
+  window.addEventListener("dragover", (e) => e.preventDefault());
+  window.addEventListener("drop", (e) => e.preventDefault());
+
+  async function submit() {
+    if (!state.files.length) return;
+    const button = $("generate");
+    button.disabled = true;
+    button.textContent = "Uploading…";
+    const title = $("title").value.trim();
+    const form = new FormData();
+    for (const file of state.files) form.append("files", file);
+    form.append("title", title);
+    try {
+      const { id } = await api("/api/jobs", { method: "POST", body: form });
+      startJob(id, Date.now() / 1000, title, state.files.map((f) => f.name));
+    } catch (err) {
+      show("upload");
+      showUploadErrors([err.message]);
+    } finally {
+      button.textContent = "Generate FRD";
+      button.disabled = state.files.length === 0;
+    }
+  }
+  $("generate").addEventListener("click", submit);
+
+  // ---------- Progress ----------
+  const STOP_AFTER_SECONDS = 30;
+
+  function startJob(id, created, title, files) {
+    state.jobId = id;
+    state.stage = 0;
+    state.finished = false;
+    history.replaceState(null, "", `#job=${id}`);
+    $("progress-title").textContent = title ? `Analysing documents for ${title}` : "Analysing your documents";
+    $("progress-files").textContent = `${plural(files.length, "document")}: ${files.join(", ")}`;
+    $("run-error").hidden = $("run-actions").hidden = $("busy").hidden = true;
+    $("retry").hidden = state.files.length === 0;
+    $("retry").textContent = "Try again";
+    $("stop").hidden = $("confirm-stop").hidden = true;
+    renderSteps();
+    setActivity("Queued", "Your request will start in a moment.", "");
+    setProgress(0);
+    show("progress");
+
+    clearInterval(state.timer);
+    const tick = () => {
+      const elapsed = Date.now() / 1000 - created;
+      $("elapsed").textContent = formatTime(elapsed);
+      if (!state.finished && elapsed >= STOP_AFTER_SECONDS && $("confirm-stop").hidden) $("stop").hidden = false;
+    };
+    tick();
+    state.timer = setInterval(tick, 1000);
+    openStream(id);
+  }
+
+  function openStream(id) {
+    state.source?.close();
+    const source = new EventSource(`/api/jobs/${id}/events`);
+    source.onmessage = (e) => handleEvent(JSON.parse(e.data));
+    source.onerror = async () => {
+      if (state.finished || source.readyState !== EventSource.CLOSED) return;
+      try {
+        const job = await api(`/api/jobs/${id}`);
+        if (job.status === "done") finish();
+        else if (job.status === "error") fail(job.error);
+        else if (job.status === "cancelled") cancelled();
+        else openStream(id);
+      } catch (err) {
+        fail(err.message);
+      }
+    };
+    state.source = source;
+  }
+
+  function renderSteps() {
+    $("steps").replaceChildren(...state.config.stages.map((stage, i) =>
+      el("li", { class: "step", id: `step-${i + 1}` },
+        el("span", { class: "marker" }, String(i + 1)),
+        el("div", {}, el("div", { class: "step-name" }, stage.name), el("div", { class: "step-desc" }, stage.description)))));
+  }
+
+  function setProgress(pct) {
+    $("progress-fill").style.width = `${pct}%`;
+    $("progress-bar").setAttribute("aria-valuenow", String(Math.round(pct)));
+  }
+
+  function setActivity(title, desc, detail) {
+    $("activity-title").textContent = title;
+    $("activity-desc").textContent = desc;
+    $("activity-detail").textContent = detail;
+  }
+
+  function setStage(n) {
+    const total = state.config.stages.length;
+    for (let i = 1; i <= total; i++) {
+      const step = $(`step-${i}`);
+      step.classList.toggle("done", i < n);
+      step.classList.toggle("active", i === n);
+      const marker = step.querySelector(".marker");
+      if (i < n) marker.textContent = "✓";
+      else if (i === n) marker.replaceChildren(el("span", { class: "spinner", "aria-label": "In progress" }));
+      else marker.textContent = String(i);
+    }
+    state.stage = n;
+    const stage = state.config.stages[n - 1];
+    $("activity-label").textContent = `Step ${n} of ${total}`;
+    setActivity(stage.name, stage.description, "");
+    setProgress(((n - 1) / total) * 100 + 100 / total / 3);
+  }
+
+  function handleEvent(ev) {
+    if (ev.type === "log") {
+      if (ev.stage && ev.stage !== state.stage) setStage(ev.stage);
+      const retry = ev.message.match(/retrying in (\d+)s/);
+      if (retry) {
+        $("busy").replaceChildren(el("div", {}, el("strong", {}, "High demand"),
+          `The analysis service is busy. Retrying automatically in ${retry[1]} seconds; your progress is kept.`));
+        $("busy").hidden = false;
+      } else if (ev.level === "info") {
+        $("busy").hidden = true;
+        // Only business-level progress is shown; service-level messages stay in the server log.
+        if (ev.source !== "specforge.llm" && !/^(Stage \d|Done:)/.test(ev.message)) $("activity-detail").textContent = ev.message;
+      }
+    } else if (ev.type === "status") {
+      if (ev.status === "queued" && ev.ahead > 0) setActivity("Queued", `Waiting for ${plural(ev.ahead, "earlier request")} to finish.`, "");
+      else if (ev.status === "running" && !state.stage) setStage(1);
+      else if (ev.status === "done") finish();
+      else if (ev.status === "error") fail(ev.error);
+      else if (ev.status === "cancelled") cancelled();
+    }
+  }
+
+  function stopStream() {
+    state.finished = true;
+    state.source?.close();
+    state.source = null;
+    clearInterval(state.timer);
+    $("stop").hidden = $("confirm-stop").hidden = true;
+  }
+
+  function fail(message) {
+    stopStream();
+    $("busy").hidden = true;
+    const step = $(`step-${state.stage || 1}`);
+    if (step) {
+      step.classList.remove("active");
+      step.classList.add("error");
+      step.querySelector(".marker").textContent = "!";
+    }
+    $("activity-label").textContent = "Stopped";
+    setActivity("Generation stopped", "See the details below.", "");
+    $("run-error").replaceChildren(alertBox("error", "The FRD could not be generated", message || "An unexpected error occurred."));
+    $("run-error").hidden = $("run-actions").hidden = false;
+  }
+
+  function cancelled() {
+    if (state.finished) return;
+    stopStream();
+    $("busy").hidden = true;
+    const step = $(`step-${state.stage || 1}`);
+    if (step) {
+      step.classList.remove("active");
+      step.classList.add("stopped");
+      step.querySelector(".marker").textContent = "–";
+    }
+    $("activity-label").textContent = "Stopped";
+    setActivity("Generation stopped", "You stopped this run.", "");
+    $("run-error").replaceChildren(el("div", { class: "alert info", role: "status" }, el("div", {}, el("strong", {}, "Run stopped"),
+      "Completed steps are saved, so running it again with the same documents picks up where this run stopped.")));
+    $("retry").textContent = "Run again";
+    $("run-error").hidden = $("run-actions").hidden = false;
+  }
+
+  $("stop").addEventListener("click", () => {
+    $("stop").hidden = true;
+    $("confirm-stop").hidden = false;
+    $("confirm-stop-yes").focus();
+  });
+  $("confirm-stop-no").addEventListener("click", () => {
+    $("confirm-stop").hidden = true;
+    if (!state.finished) $("stop").hidden = false;
+  });
+  $("confirm-stop-yes").addEventListener("click", async () => {
+    const button = $("confirm-stop-yes");
+    button.disabled = true;
+    button.textContent = "Stopping…";
+    try {
+      const { status } = await api(`/api/jobs/${state.jobId}/cancel`, { method: "POST" });
+      if (status === "cancelled") cancelled();
+    } catch (err) {
+      fail(err.message);
+    } finally {
+      button.disabled = false;
+      button.textContent = "Stop run";
+    }
+  });
+
+  $("retry").addEventListener("click", submit);
+  $("restart-from-error").addEventListener("click", reset);
+
+  async function finish() {
+    stopStream();
+    setProgress(100);
+    try {
+      renderResult(await api(`/api/jobs/${state.jobId}`));
+    } catch (err) {
+      fail(err.message);
+    }
+  }
+
+  // ---------- Result ----------
+  function sourceText(ids, sources) {
+    const byDoc = new Map();
+    for (const id of ids) {
+      const doc = sources[id.split("-")[0]] || id;
+      if (!byDoc.has(doc)) byDoc.set(doc, []);
+      byDoc.get(doc).push(id);
+    }
+    return [...byDoc].map(([doc, list]) => `${doc} (${list.join(", ")})`).join("; ");
+  }
+
+  function renderResult(job) {
+    const { frd } = job;
+    const ctx = frd.context, reqs = frd.requirements;
+    const docCount = Object.keys(frd.sources).length;
+    $("result-title").textContent = ctx.title;
+    $("result-sub").textContent = `Generated ${new Date(job.created * 1000).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" })} from ${plural(docCount, "source document")}`;
+
+    const link = (fmt, label, primary) => el("a", { class: `btn${primary ? " primary" : ""}`, href: `/api/jobs/${job.id}/download/${fmt}`, download: true }, label);
+    $("downloads").replaceChildren(
+      link("docx", "Download Word", true), link("md", "Markdown"), link("json", "JSON"),
+      el("button", { class: "btn", type: "button", onclick: reset }, "New FRD"));
+
+    const kpi = (value, label, cls = "") => el("div", { class: `kpi ${cls}` }, el("b", {}, value), el("span", {}, label));
+    $("kpis").replaceChildren(
+      kpi(reqs.length, "Requirements", "accent"),
+      kpi(ctx.modules.length, "Modules"),
+      kpi(reqs.filter((r) => r.priority === "Must").length, "Must-have"),
+      kpi(frd.open_questions.length, "Open questions", frd.open_questions.length ? "warn" : ""));
+
+    const modules = ctx.modules.map((m, i) => ({ ...m, anchor: `mod-${i + 1}`, items: reqs.filter((r) => r.module === m.name) }));
+    const navLink = (href, label, count, indent) => el("a", { href: `#${href}`, class: indent ? "indent" : "" }, el("span", {}, label), count != null ? el("span", { class: "count" }, count) : "");
+    $("doc-nav").replaceChildren(
+      el("div", { class: "label" }, "Contents"),
+      navLink("sec-intro", "1. Introduction"),
+      navLink("sec-scope", "2. Scope"),
+      navLink("sec-stakeholders", "3. Stakeholders"),
+      navLink("sec-requirements", "4. Requirements", reqs.length),
+      modules.map((m) => navLink(m.anchor, m.name, m.items.length, true)),
+      navLink("sec-questions", "5. Open questions", frd.open_questions.length),
+      navLink("sec-sources", "6. Source documents"));
+
+    const list = (items, empty) => items.length ? el("ul", { class: "plain" }, items.map((x) => el("li", {}, x))) : el("p", { class: "muted" }, empty);
+    const heading = (num, text) => el("h3", {}, el("span", { class: "num" }, num), text);
+
+    $("doc").replaceChildren(
+      el("section", { id: "sec-intro" },
+        heading("1", "Introduction"),
+        el("h4", {}, "Purpose"), el("p", {}, ctx.purpose),
+        el("h4", {}, "Executive summary"),
+        frd.summary.executive_summary.split(/\n\n+/).filter(Boolean).map((p) => el("p", {}, p))),
+      el("section", { id: "sec-scope" },
+        heading("2", "Scope"),
+        el("div", { class: "two-col" },
+          el("div", {}, el("h4", {}, "In scope"), list(ctx.scope_in, "Not stated in the sources.")),
+          el("div", {}, el("h4", {}, "Out of scope"), list(ctx.scope_out, "Not stated in the sources."))),
+        el("div", { class: "two-col" },
+          el("div", {}, el("h4", {}, "Assumptions"), list(ctx.assumptions, "None stated.")),
+          el("div", {}, el("h4", {}, "Constraints"), list(ctx.constraints, "None stated.")))),
+      el("section", { id: "sec-stakeholders" },
+        heading("3", "Stakeholders and user roles"),
+        ctx.stakeholders.length
+          ? el("div", { class: "table-wrap" }, el("table", {},
+              el("thead", {}, el("tr", {}, el("th", {}, "Role"), el("th", {}, "Needs"))),
+              el("tbody", {}, ctx.stakeholders.map((s) => el("tr", {}, el("td", {}, s.role), el("td", {}, s.description || "—"))))))
+          : el("p", { class: "muted" }, "No stakeholders identified in the sources.")),
+      el("section", { id: "sec-requirements" },
+        heading("4", "Functional requirements"),
+        modules.map((m, i) => el("div", { id: m.anchor, style: i ? "margin-top: 32px" : "" },
+          el("h4", { style: "font-size: 15px; text-transform: none; letter-spacing: 0; color: var(--text)" }, `4.${i + 1} ${m.name}`),
+          el("p", { class: "module-intro" }, frd.summary.module_overviews[m.name] || m.description),
+          m.items.length ? m.items.map((r) => renderRequirement(r, frd.sources)) : el("div", { class: "empty" }, "No requirements were found in the sources for this module.")))),
+      el("section", { id: "sec-questions" },
+        heading("5", "Open questions"),
+        frd.open_questions.length
+          ? el("ol", { class: "questions" }, frd.open_questions.map((q) => el("li", {}, el("span", {}, q))))
+          : el("p", { class: "muted" }, "No open questions were raised.")),
+      el("section", { id: "sec-sources" },
+        heading("6", "Source documents"),
+        el("div", { class: "table-wrap" }, el("table", {},
+          el("thead", {}, el("tr", {}, el("th", {}, "Reference"), el("th", {}, "Document"))),
+          el("tbody", {}, Object.entries(frd.sources).map(([k, v]) => el("tr", {}, el("td", {}, k), el("td", {}, v))))))));
+    show("result");
+  }
+
+  function renderRequirement(r, sources) {
+    const block = (label, items, ordered) => items.length
+      ? el("div", { class: "req-block" }, el("div", { class: "k" }, label), el(ordered ? "ol" : "ul", {}, items.map((x) => el("li", {}, x))))
+      : "";
+    return el("div", { class: "req" },
+      el("div", { class: "req-head" },
+        el("span", { class: "req-id" }, r.id),
+        el("span", { class: "req-title" }, r.title),
+        el("span", { class: `chip ${r.priority}` }, r.priority)),
+      el("p", { class: "req-desc" }, r.description),
+      block("Business rules", r.business_rules),
+      block("Acceptance criteria", r.acceptance_criteria, true),
+      r.notes.map((n) => el("div", { class: "note" }, el("b", {}, "Review note"), el("span", {}, n))),
+      el("div", { class: "req-foot" },
+        r.actor ? el("span", {}, el("b", {}, "Actor: "), r.actor) : "",
+        r.inputs.length ? el("span", {}, el("b", {}, "Inputs: "), r.inputs.join(", ")) : "",
+        r.outputs.length ? el("span", {}, el("b", {}, "Outputs: "), r.outputs.join(", ")) : "",
+        el("span", {}, el("b", {}, "Source: "), r.sources.length ? sourceText(r.sources, sources) : "none")));
+  }
+
+  function reset() {
+    stopStream();
+    state.jobId = null;
+    state.files = [];
+    $("title").value = "";
+    history.replaceState(null, "", location.pathname);
+    showUploadErrors([]);
+    renderFiles();
+    show("upload");
+  }
+
+  // ---------- Init ----------
+  async function init() {
+    state.config = await api("/api/config");
+    const types = state.config.accept.map((a) => a.slice(1).toUpperCase()).join(", ");
+    $("drop-hint").textContent = `${types} · up to ${state.config.max_files} files, ${state.config.max_file_mb} MB each`;
+    input.accept = state.config.accept.join(",");
+
+    const id = (location.hash.match(/job=([\w-]+)/) || [])[1];
+    if (!id) return show("upload");
+    try {
+      const job = await api(`/api/jobs/${id}`);
+      state.jobId = id;
+      if (job.status === "done") renderResult(job);
+      else startJob(id, job.created, job.title, job.files);
+    } catch (err) {
+      history.replaceState(null, "", location.pathname);
+      show("upload");
+      showUploadErrors([err.message]);
+    }
+  }
+  init().catch((err) => { show("upload"); showUploadErrors([`The service could not be reached. ${err.message}`]); });
+})();
+</script>
+</body>
+</html>
