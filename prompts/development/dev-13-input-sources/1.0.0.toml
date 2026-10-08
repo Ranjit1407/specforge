@@ -1,0 +1,38 @@
+id = "dev-13-input-sources"
+version = "1.0.0"
+title = "Support file, folder and CLI inputs with per-file tracking"
+kind = "development"
+status = "implemented"
+date = "2026-10-08"
+purpose = "Accept single files, multiple files and nested folders through the CLI and web UI, with validation, deduplication and per-file status."
+outcome = "Release 1.1.0: a shared input collection, validation before processing, content or path deduplication, per-file status reporting, folder upload and the --check option."
+changes = "Recorded as written: it was already a complete, implementation-ready specification."
+
+template = '''
+### Input Source Requirement
+
+The system must support individual files, multiple files, folders, and command-line interface (CLI) inputs.
+
+- File Input: Users should be able to provide one or more individual files for processing.
+- Folder Input: Users should be able to provide a folder containing multiple files. The system must recursively scan the folder and identify all supported files within nested subfolders.
+- CLI Input: The system must provide CLI commands for specifying files, folders, and processing options without requiring the web interface.
+- Supported Formats: The system should process all configured document formats and ignore unsupported file types with an appropriate warning.
+- Batch Processing: When multiple files or a folder is provided, all supported files should be processed as a single input collection while maintaining individual file identity and metadata.
+- File-Level Tracking: The system must retain the original file name, relative folder path, file type, and processing status for every file.
+- Duplicate Handling: Duplicate files should be detected and handled according to the configured deduplication policy.
+- Error Handling: If an individual file fails during processing, the system should continue processing the remaining valid files and report failed files separately.
+- Validation: The system should validate the input path, file accessibility, supported formats, and file integrity before processing begins.
+- Consistent Processing: File, folder, and CLI inputs should use the same underlying processing pipeline to ensure consistent results regardless of the input method.
+
+### Expected Input Methods
+
+The system should support:
+
+1. Single file
+2. Multiple files
+3. Folder containing files
+4. Folder containing nested subfolders and files
+5. File or folder provided through the CLI
+6. CLI options for configuring processing parameters
+
+The system should normalize all input types into a common collection of documents before initiating downstream processing.'''

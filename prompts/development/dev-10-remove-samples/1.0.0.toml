@@ -1,0 +1,12 @@
+id = "dev-10-remove-samples"
+version = "1.0.0"
+title = "Remove the bundled sample documents"
+kind = "development"
+status = "implemented"
+date = "2026-10-07"
+purpose = "Remove the example input documents from the project."
+outcome = "The samples/ folder was deleted and the README line that referred to it was removed."
+changes = "Original request as written."
+
+template = '''
+remove samples'''

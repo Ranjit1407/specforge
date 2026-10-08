@@ -1,0 +1,23 @@
+id = "dev-06-bug-fixes-corporate-ui"
+version = "1.1.0"
+title = "Fix bugs and restyle the frontend in a corporate style"
+kind = "development"
+status = "implemented"
+date = "2026-10-08"
+purpose = "Find and fix defects across the application and give the frontend a professional corporate design."
+outcome = "Fixes to logging, error messages, cache paths, module de-duplication and exports; a navy and slate UI with a three-step flow, stage descriptions, summary figures and dark mode."
+changes = "Rewritten professionally with the same intent: lists what the bug review covers and the concrete goals of the redesign."
+
+template = '''
+Review the whole application for defects and fix them, then redesign the frontend in a professional corporate style.
+
+Bug review: check the pipeline, the server and the frontend for errors, inconsistent state, unclear error messages, paths that depend on the working directory, and anything that exposes implementation details (model names, raw API errors) to users. Fix each problem at its root and verify the fix.
+
+Frontend redesign:
+- A restrained corporate look: navy and slate palette, clear typography and consistent spacing.
+- A visible three-step flow: upload, analysis, review and export.
+- Progress that explains each stage in business terms, with the elapsed time.
+- A result view with summary figures, downloads and a navigable FRD preview.
+- A responsive layout, dark mode and accessible markup.
+
+Keep all existing functionality working.'''

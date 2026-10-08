@@ -1,0 +1,12 @@
+id = "dev-08-model-and-key-update"
+version = "1.0.0"
+title = "Switch the API key and use Qwen as the primary model"
+kind = "development"
+status = "implemented"
+date = "2026-10-01"
+purpose = "Update the OpenRouter key and model configuration so runs are less affected by rate limits."
+outcome = "Key stored in .env; Qwen primary with Gemma 4 31B and NVIDIA Nemotron fallbacks; FALLBACK_MODEL accepts a comma-separated list."
+changes = "Original request as written; the API key it contained is redacted."
+
+template = '''
+sk-or-v1-[REDACTED] use this key qwen/qwen3.8-27b:free'''

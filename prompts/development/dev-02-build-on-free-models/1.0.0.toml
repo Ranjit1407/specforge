@@ -1,0 +1,12 @@
+id = "dev-02-build-on-free-models"
+version = "1.0.0"
+title = "Build the project on free OpenRouter models"
+kind = "development"
+status = "implemented"
+date = "2026-10-01"
+purpose = "Implement the designed system as a runnable project that uses free Gemma 4 models through OpenRouter."
+outcome = "The SpecForge package: ingestion, hybrid retriever, seven-agent pipeline, OpenRouter client with fallback, backoff and caching, CLI, and Word/Markdown/JSON export."
+changes = "Original request as written; the API key it contained is redacted."
+
+template = '''
+use free llm sk-or-v1-[REDACTED] Gemma 4 26B A4BGemma 4 31B now build the project'''

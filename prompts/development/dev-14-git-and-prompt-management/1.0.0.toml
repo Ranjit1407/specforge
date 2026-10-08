@@ -1,0 +1,96 @@
+id = "dev-14-git-and-prompt-management"
+version = "1.0.0"
+title = "Add Git version control and prompt management"
+kind = "development"
+status = "implemented"
+date = "2026-10-08"
+purpose = "Put the project under Git with a meaningful history, and store, version and document all prompts."
+outcome = "Release 1.2.0: tagged Git history, a hardened .gitignore, the versioned prompt catalog with its CLI, this development prompt history, the README overhaul and a CHANGELOG."
+changes = "Recorded as written: it was already a complete, implementation-ready specification."
+
+template = '''
+Update the existing project by adding Git-based version control and a prompt management system without disrupting the existing functionality.
+
+1. Git Version Control
+
+Integrate Git into the existing project to provide proper source-code version control.
+
+Requirements:
+- Initialize the existing project as a Git repository if Git is not already configured.
+- Create an appropriate .gitignore file for the project's technology stack.
+- Ensure sensitive information such as API keys, passwords, tokens, credentials, .env files, and other secrets are excluded from version control.
+- Organize commits using clear, descriptive commit messages.
+- Maintain meaningful version history for project changes.
+- Use semantic versioning (MAJOR.MINOR.PATCH) where applicable.
+- Document the Git workflow and commonly used Git commands in the README.md.
+- Do not modify or remove existing project functionality solely for the purpose of introducing Git.
+
+2. Prompt Management
+
+Add a prompt management mechanism to the existing project for storing and maintaining prompts used by the system.
+
+Requirements:
+- Store previously used prompts in a dedicated and clearly identifiable location.
+- Prompts should be organized so they can be easily searched, reviewed, reused, and updated.
+- Each stored prompt should have a meaningful name or identifier.
+- Maintain the prompt's purpose, version, and relevant usage information where applicable.
+- Avoid storing duplicate prompts unnecessarily.
+- Preserve previous prompt versions when a prompt is modified, where practical.
+- Ensure prompt changes can be tracked through Git.
+
+3. README Prompt Documentation
+
+Update the existing README.md to document the prompts used by the project.
+
+Requirements:
+- Add a dedicated Prompt Management section to README.md.
+- Store the current and previously used prompts in a structured format that is easy for developers to understand and maintain.
+- If an existing prompt is informal, incomplete, or overly simple, rewrite it into a professional, clear, and implementation-oriented prompt while preserving its original intent.
+- Do not change the functional intent of an existing prompt unless required for clarity or correctness.
+- Clearly identify the purpose of each prompt.
+- Include prompt versions where applicable.
+- Document significant changes between prompt versions.
+- Keep the README prompt documentation synchronized with the actual prompts used by the application.
+
+4. Prompt Version Control
+
+Prompt modifications must be treated as version-controlled project changes.
+
+For each significant prompt change:
+- Assign an appropriate prompt version.
+- Record what was changed and why.
+- Preserve the previous version when historical tracking is required.
+- Commit prompt changes through Git using descriptive commit messages.
+
+5. README Maintenance
+
+The existing README.md should be enhanced rather than unnecessarily replaced.
+
+The README should document:
+- Project overview
+- Installation and setup
+- Existing functionality
+- Project structure
+- Git setup and workflow
+- Prompt management
+- Current prompts and their purposes
+- Prompt version history
+- CLI usage, if supported by the existing project
+- Configuration requirements
+- Development and contribution guidelines
+
+6. Implementation Constraints
+
+- Treat the current project as the source of truth.
+- Inspect the existing project structure and implementation before making changes.
+- Preserve all existing functionality unless a change is explicitly required.
+- Do not introduce unnecessary dependencies.
+- Follow the project's existing coding conventions and technology choices.
+- Do not hardcode credentials or sensitive configuration.
+- Ensure the project remains runnable after the changes.
+- Update documentation to accurately reflect the implemented functionality.
+- Keep Git configuration, prompt management, and documentation clean, maintainable, and suitable for future development.
+
+Expected outcome:
+
+The existing project should have a proper Git version-control structure, a maintainable prompt management system, professionally documented prompts, and an updated README.md that provides clear documentation of both the project's development workflow and its prompt history.'''

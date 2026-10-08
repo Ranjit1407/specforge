@@ -1,0 +1,18 @@
+id = "dev-05-web-hosting"
+version = "1.1.0"
+title = "Host the application as a local web server"
+kind = "development"
+status = "implemented"
+date = "2026-10-08"
+purpose = "Run SpecForge as a web application that is used from a browser."
+outcome = "`python -m specforge.web` serves the UI and API at http://127.0.0.1:8000 with a background job queue and progress streaming."
+changes = "Rewritten professionally with the same intent: defines the single start command, background jobs, progress streaming, per-job storage and documentation."
+
+template = '''
+Run the application as a web server so that it can be used from a browser.
+
+- Serve the frontend and the API from one process with a single start command.
+- Run generation jobs in the background so requests return immediately. Process jobs one at a time, because the free model tier is rate-limited per account.
+- Stream progress to the browser while a job runs, and keep results downloadable after it finishes.
+- Store each job's uploads and outputs in its own folder, independent of the directory the server was started from.
+- Document the start command and the URL in the README.'''

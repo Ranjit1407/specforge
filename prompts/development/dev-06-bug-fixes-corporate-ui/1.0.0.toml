@@ -1,0 +1,12 @@
+id = "dev-06-bug-fixes-corporate-ui"
+version = "1.0.0"
+title = "Fix bugs and restyle the frontend in a corporate style"
+kind = "development"
+status = "implemented"
+date = "2026-10-01"
+purpose = "Find and fix defects across the application and give the frontend a professional corporate design."
+outcome = "Fixes to logging, error messages, cache paths, module de-duplication and exports; a navy and slate UI with a three-step flow, stage descriptions, summary figures and dark mode."
+changes = "Original request as written."
+
+template = '''
+check for any bugs and rectify make the frontend more attractive in corporate style'''

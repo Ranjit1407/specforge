@@ -1,0 +1,17 @@
+id = "dev-08-model-and-key-update"
+version = "1.1.0"
+title = "Switch the API key and use Qwen as the primary model"
+kind = "development"
+status = "implemented"
+date = "2026-10-08"
+purpose = "Update the OpenRouter key and model configuration so runs are less affected by rate limits."
+outcome = "Key stored in .env; Qwen primary with Gemma 4 31B and NVIDIA Nemotron fallbacks; FALLBACK_MODEL accepts a comma-separated list."
+changes = "Rewritten professionally with the same intent: keeps the key out of the prompt and code, and asks for a cross-provider fallback chain and a live test."
+
+template = '''
+Update the model configuration.
+
+- Replace the OpenRouter API key with the new one. Store it only in .env, never in code or committed files.
+- Use qwen/qwen3.8-27b:free as the primary model.
+- Check which free models currently respond, and configure a fallback chain from different providers so that one provider's rate limit does not stop a run.
+- Run a live test on sample documents and report the result.'''

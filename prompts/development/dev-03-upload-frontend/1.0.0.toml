@@ -1,0 +1,12 @@
+id = "dev-03-upload-frontend"
+version = "1.0.0"
+title = "Add a web frontend for uploading documents"
+kind = "development"
+status = "implemented"
+date = "2026-10-01"
+purpose = "Give users a browser interface to upload source documents and get the FRD."
+outcome = "Upload page served by FastAPI, with live progress and FRD preview and download."
+changes = "Original request as written."
+
+template = '''
+create a frontend to ask the user to upload the document'''

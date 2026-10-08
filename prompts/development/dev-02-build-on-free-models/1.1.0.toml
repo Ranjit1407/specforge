@@ -1,0 +1,19 @@
+id = "dev-02-build-on-free-models"
+version = "1.1.0"
+title = "Build the project on free OpenRouter models"
+kind = "development"
+status = "implemented"
+date = "2026-10-08"
+purpose = "Implement the designed system as a runnable project that uses free Gemma 4 models through OpenRouter."
+outcome = "The SpecForge package: ingestion, hybrid retriever, seven-agent pipeline, OpenRouter client with fallback, backoff and caching, CLI, and Word/Markdown/JSON export."
+changes = "Rewritten professionally with the same intent: names the models by ID, keeps the key in .env instead of the prompt, and lists the deliverables and the handling of free-tier rate limits."
+
+template = '''
+Implement the FRD generation system designed in dev-01 as a runnable Python project.
+
+Model access:
+- Use free models through OpenRouter: Gemma 4 31B (google/gemma-4-31b-it:free) as the primary model and Gemma 4 26B A4B (google/gemma-4-26b-a4b-it:free) as the fallback.
+- Read the OpenRouter API key from a .env file that is excluded from version control, and provide a .env.example. Never hardcode the key.
+- Free models are rate-limited: retry with exponential backoff, fall back between models, and cache validated replies on disk so that an interrupted run can resume.
+
+Deliver ingestion of PDF, Word, Markdown and text files, the hybrid retrieval index, the agent chain, Word, Markdown and JSON export of the FRD, a command-line entry point, and a README with setup and usage instructions.'''

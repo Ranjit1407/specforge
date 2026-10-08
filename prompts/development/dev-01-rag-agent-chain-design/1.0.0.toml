@@ -1,0 +1,12 @@
+id = "dev-01-rag-agent-chain-design"
+version = "1.0.0"
+title = "Design a RAG agent chain that generates an FRD"
+kind = "development"
+status = "answered"
+date = "2026-10-01"
+purpose = "Ask for the architecture, tools and techniques for generating an FRD from input documents with a chain of agents and RAG."
+outcome = "Recommended a hybrid-retrieval, multi-agent design with grounding, citations, schema-validated outputs and a review step; this became SpecForge's architecture."
+changes = "Original request as written."
+
+template = '''
+Build a chain of agents using RAG (Retrieval-Augmented Generation) to generate an FRD based on a set of input documents. give me the tools and technique for this'''

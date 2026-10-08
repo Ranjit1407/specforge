@@ -1,0 +1,12 @@
+id = "dev-09-stop-button"
+version = "1.0.0"
+title = "Add a Stop button for long-running jobs"
+kind = "development"
+status = "implemented"
+date = "2026-10-01"
+purpose = "Let users stop a generation run that is taking too long."
+outcome = "A Stop button appears after 30 seconds, with confirmation; cancelling interrupts in-flight requests and retry waits, and completed steps stay cached for the next run."
+changes = "Original request as written."
+
+template = '''
+create a stop button to stop the process if it takes more than 30 seconds'''

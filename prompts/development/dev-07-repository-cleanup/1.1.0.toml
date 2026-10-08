@@ -1,0 +1,17 @@
+id = "dev-07-repository-cleanup"
+version = "1.1.0"
+title = "Remove unused code and files"
+kind = "development"
+status = "implemented"
+date = "2026-10-08"
+purpose = "Remove dead code and unneeded files from the project without changing behaviour."
+outcome = "Unused code, bytecode caches, stale caches and test runs removed; completed FRDs moved to output/ before their job folders were deleted."
+changes = "Rewritten professionally with the same intent: separates unused code from generated files, says what must be kept, and requires verification."
+
+template = '''
+Clean up the repository without changing behaviour.
+
+- Find unused code (functions, imports, fields) with static analysis and remove it.
+- Delete generated and temporary files: Python bytecode caches, stale caches, test outputs and abandoned job folders.
+- Keep user data and anything expensive to recreate, such as completed outputs, downloaded models and cached model replies, or move it to the proper output folder first.
+- Re-run the tests afterwards to confirm nothing broke, and report what was removed and what was kept.'''

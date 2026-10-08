@@ -1,0 +1,12 @@
+id = "dev-05-web-hosting"
+version = "1.0.0"
+title = "Host the application as a local web server"
+kind = "development"
+status = "implemented"
+date = "2026-10-01"
+purpose = "Run SpecForge as a web application that is used from a browser."
+outcome = "`python -m specforge.web` serves the UI and API at http://127.0.0.1:8000 with a background job queue and progress streaming."
+changes = "Original request as written."
+
+template = '''
+host it on web'''

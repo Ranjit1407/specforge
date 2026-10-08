@@ -1,0 +1,12 @@
+id = "dev-04-domain-agnostic"
+version = "1.0.0"
+title = "Make generation domain-agnostic"
+kind = "development"
+status = "implemented"
+date = "2026-10-01"
+purpose = "Make the system understand documents from any domain instead of one specific case."
+outcome = "Modules, roles and search queries are derived from the documents by the Scope Analyst; domain-specific assumptions were removed and the Document Reader and Coverage Sweep agents were added."
+changes = "Original request as written."
+
+template = '''
+i want it for generic not for specific case,the code should understand the document and provide the frd'''

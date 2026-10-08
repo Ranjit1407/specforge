@@ -1,0 +1,50 @@
+id = "dev-11-huggingface-kimi-provider"
+version = "1.1.0"
+title = "Use Kimi-K3 through the Hugging Face router"
+kind = "development"
+status = "reverted"
+date = "2026-10-08"
+purpose = "Call models through the Hugging Face Inference Providers router, using Kimi-K3 on Together."
+outcome = "A configurable provider setting (LLM_PROVIDER) with Kimi-K3 on Together was added, then reverted in dev-12 because the model is paid."
+changes = "Rewritten professionally with the same intent: states the provider, model, configuration and cost check, and notes that only text input is needed."
+
+template = '''
+Add support for calling models through the Hugging Face Inference Providers router, following the example below, and use moonshotai/Kimi-K3 served by Together as the primary model.
+
+- Make the provider configurable (OpenRouter or Hugging Face) without code changes, and read the Hugging Face token from HF_TOKEN in .env.
+- Keep OpenRouter working so that it is possible to switch back.
+- Confirm that the model is available and report its cost before relying on it.
+- SpecForge sends text only, so the image input in the example is not needed.
+
+Reference example:
+
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://router.huggingface.co/v1",
+    api_key=os.environ["HF_TOKEN"],
+)
+
+completion = client.chat.completions.create(
+    model="moonshotai/Kimi-K3:together",
+    messages=[
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Describe this image in one sentence."
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": "https://cdn.britannica.com/61/93061-050-99147DCE/Statue-of-Liberty-Island-New-York-Bay.jpg"
+                    }
+                }
+            ]
+        }
+    ],
+)
+
+print(completion.choices[0].message)'''

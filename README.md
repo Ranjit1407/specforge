@@ -424,6 +424,523 @@ For each requirement:
 
 </details>
 
+#### Development prompts
+
+Requests that shaped the codebase, in order. Version 1.0.0 is the request as originally written (credentials redacted); 1.1.0, where present, is a professional rewrite with the same intent, ready to reuse.
+
+| Prompt | Version | Status | Date | Request |
+| --- | --- | --- | --- | --- |
+| `dev-01-rag-agent-chain-design` | 1.1.0 | answered | 2026-10-01 | Design a RAG agent chain that generates an FRD |
+| `dev-02-build-on-free-models` | 1.1.0 | implemented | 2026-10-01 | Build the project on free OpenRouter models |
+| `dev-03-upload-frontend` | 1.1.0 | implemented | 2026-10-01 | Add a web frontend for uploading documents |
+| `dev-04-domain-agnostic` | 1.1.0 | implemented | 2026-10-01 | Make generation domain-agnostic |
+| `dev-05-web-hosting` | 1.1.0 | implemented | 2026-10-01 | Host the application as a local web server |
+| `dev-06-bug-fixes-corporate-ui` | 1.1.0 | implemented | 2026-10-01 | Fix bugs and restyle the frontend in a corporate style |
+| `dev-07-repository-cleanup` | 1.1.0 | implemented | 2026-10-01 | Remove unused code and files |
+| `dev-08-model-and-key-update` | 1.1.0 | implemented | 2026-10-01 | Switch the API key and use Qwen as the primary model |
+| `dev-09-stop-button` | 1.1.0 | implemented | 2026-10-01 | Add a Stop button for long-running jobs |
+| `dev-10-remove-samples` | 1.1.0 | implemented | 2026-10-07 | Remove the bundled sample documents |
+| `dev-11-huggingface-kimi-provider` | 1.1.0 | reverted | 2026-10-07 | Use Kimi-K3 through the Hugging Face router |
+| `dev-12-remove-kimi` | 1.1.0 | implemented | 2026-10-07 | Remove the Kimi-K3 and Hugging Face provider |
+| `dev-13-input-sources` | 1.0.0 | implemented | 2026-10-08 | Support file, folder and CLI inputs with per-file tracking |
+| `dev-14-git-and-prompt-management` | 1.0.0 | implemented | 2026-10-08 | Add Git version control and prompt management |
+
+<details>
+<summary><code>dev-01-rag-agent-chain-design</code> v1.1.0: Design a RAG agent chain that generates an FRD</summary>
+
+**Purpose:** Ask for the architecture, tools and techniques for generating an FRD from input documents with a chain of agents and RAG.  
+**Outcome:** Recommended a hybrid-retrieval, multi-agent design with grounding, citations, schema-validated outputs and a review step; this became SpecForge's architecture.  
+**File:** `prompts/development/dev-01-rag-agent-chain-design/1.1.0.toml`
+
+```text
+Design a system that generates a Functional Requirements Document (FRD) from a set of input documents using a chain of LLM agents with Retrieval-Augmented Generation (RAG).
+
+Provide:
+1. The architecture: the agents in the chain, the responsibility of each, and the data passed between them.
+2. The retrieval approach: how documents are parsed, chunked, indexed and searched so that each agent receives the relevant evidence.
+3. The techniques that keep the output accurate: grounding in the sources, citations to source passages, schema-validated structured outputs, and a review step that finds duplicates, conflicts and gaps.
+4. The recommended tools and libraries for each part, with the reason for each choice.
+
+The FRD must contain the project context, functional requirements grouped by module with priorities and acceptance criteria, open questions, and traceability from every requirement back to its source documents.
+```
+
+Previous version 1.0.0 (2026-10-01): Original request as written.
+
+```text
+Build a chain of agents using RAG (Retrieval-Augmented Generation) to generate an FRD based on a set of input documents. give me the tools and technique for this
+```
+
+</details>
+
+<details>
+<summary><code>dev-02-build-on-free-models</code> v1.1.0: Build the project on free OpenRouter models</summary>
+
+**Purpose:** Implement the designed system as a runnable project that uses free Gemma 4 models through OpenRouter.  
+**Outcome:** The SpecForge package: ingestion, hybrid retriever, seven-agent pipeline, OpenRouter client with fallback, backoff and caching, CLI, and Word/Markdown/JSON export.  
+**File:** `prompts/development/dev-02-build-on-free-models/1.1.0.toml`
+
+```text
+Implement the FRD generation system designed in dev-01 as a runnable Python project.
+
+Model access:
+- Use free models through OpenRouter: Gemma 4 31B (google/gemma-4-31b-it:free) as the primary model and Gemma 4 26B A4B (google/gemma-4-26b-a4b-it:free) as the fallback.
+- Read the OpenRouter API key from a .env file that is excluded from version control, and provide a .env.example. Never hardcode the key.
+- Free models are rate-limited: retry with exponential backoff, fall back between models, and cache validated replies on disk so that an interrupted run can resume.
+
+Deliver ingestion of PDF, Word, Markdown and text files, the hybrid retrieval index, the agent chain, Word, Markdown and JSON export of the FRD, a command-line entry point, and a README with setup and usage instructions.
+```
+
+Previous version 1.0.0 (2026-10-01): Original request as written; the API key it contained is redacted.
+
+```text
+use free llm sk-or-v1-[REDACTED] Gemma 4 26B A4BGemma 4 31B now build the project
+```
+
+</details>
+
+<details>
+<summary><code>dev-03-upload-frontend</code> v1.1.0: Add a web frontend for uploading documents</summary>
+
+**Purpose:** Give users a browser interface to upload source documents and get the FRD.  
+**Outcome:** Upload page served by FastAPI, with live progress and FRD preview and download.  
+**File:** `prompts/development/dev-03-upload-frontend/1.1.0.toml`
+
+```text
+Add a browser-based frontend so that users can generate an FRD without the command line.
+
+- Let the user select or drag and drop one or more source documents (PDF, Word, Markdown, text), and validate type and size before upload.
+- Optionally accept a project name.
+- Start generation on the server and show progress while the agents run.
+- When the run finishes, show the FRD and offer it for download as Word, Markdown and JSON.
+- Show clear, non-technical messages when an upload or a run fails.
+
+Reuse the existing pipeline on the server; the frontend must not duplicate any generation logic.
+```
+
+Previous version 1.0.0 (2026-10-01): Original request as written.
+
+```text
+create a frontend to ask the user to upload the document
+```
+
+</details>
+
+<details>
+<summary><code>dev-04-domain-agnostic</code> v1.1.0: Make generation domain-agnostic</summary>
+
+**Purpose:** Make the system understand documents from any domain instead of one specific case.  
+**Outcome:** Modules, roles and search queries are derived from the documents by the Scope Analyst; domain-specific assumptions were removed and the Document Reader and Coverage Sweep agents were added.  
+**File:** `prompts/development/dev-04-domain-agnostic/1.1.0.toml`
+
+```text
+Make FRD generation work for documents from any domain, not only the sample case.
+
+- Remove every domain-specific assumption from the code and prompts: module names, roles, terminology and example values.
+- Derive the project's modules, user roles and constraints from the uploaded documents, and generate each module's retrieval queries in the documents' own vocabulary.
+- Build an understanding of the whole document set before extracting requirements, so the FRD's structure reflects the system the documents describe.
+- Make sure requirements that retrieval misses are still found, for example by re-checking passages that no requirement cites.
+
+Verify the result with documents from at least two unrelated domains.
+```
+
+Previous version 1.0.0 (2026-10-01): Original request as written.
+
+```text
+i want it for generic not for specific case,the code should understand the document and provide the frd
+```
+
+</details>
+
+<details>
+<summary><code>dev-05-web-hosting</code> v1.1.0: Host the application as a local web server</summary>
+
+**Purpose:** Run SpecForge as a web application that is used from a browser.  
+**Outcome:** `python -m specforge.web` serves the UI and API at http://127.0.0.1:8000 with a background job queue and progress streaming.  
+**File:** `prompts/development/dev-05-web-hosting/1.1.0.toml`
+
+```text
+Run the application as a web server so that it can be used from a browser.
+
+- Serve the frontend and the API from one process with a single start command.
+- Run generation jobs in the background so requests return immediately. Process jobs one at a time, because the free model tier is rate-limited per account.
+- Stream progress to the browser while a job runs, and keep results downloadable after it finishes.
+- Store each job's uploads and outputs in its own folder, independent of the directory the server was started from.
+- Document the start command and the URL in the README.
+```
+
+Previous version 1.0.0 (2026-10-01): Original request as written.
+
+```text
+host it on web
+```
+
+</details>
+
+<details>
+<summary><code>dev-06-bug-fixes-corporate-ui</code> v1.1.0: Fix bugs and restyle the frontend in a corporate style</summary>
+
+**Purpose:** Find and fix defects across the application and give the frontend a professional corporate design.  
+**Outcome:** Fixes to logging, error messages, cache paths, module de-duplication and exports; a navy and slate UI with a three-step flow, stage descriptions, summary figures and dark mode.  
+**File:** `prompts/development/dev-06-bug-fixes-corporate-ui/1.1.0.toml`
+
+```text
+Review the whole application for defects and fix them, then redesign the frontend in a professional corporate style.
+
+Bug review: check the pipeline, the server and the frontend for errors, inconsistent state, unclear error messages, paths that depend on the working directory, and anything that exposes implementation details (model names, raw API errors) to users. Fix each problem at its root and verify the fix.
+
+Frontend redesign:
+- A restrained corporate look: navy and slate palette, clear typography and consistent spacing.
+- A visible three-step flow: upload, analysis, review and export.
+- Progress that explains each stage in business terms, with the elapsed time.
+- A result view with summary figures, downloads and a navigable FRD preview.
+- A responsive layout, dark mode and accessible markup.
+
+Keep all existing functionality working.
+```
+
+Previous version 1.0.0 (2026-10-01): Original request as written.
+
+```text
+check for any bugs and rectify make the frontend more attractive in corporate style
+```
+
+</details>
+
+<details>
+<summary><code>dev-07-repository-cleanup</code> v1.1.0: Remove unused code and files</summary>
+
+**Purpose:** Remove dead code and unneeded files from the project without changing behaviour.  
+**Outcome:** Unused code, bytecode caches, stale caches and test runs removed; completed FRDs moved to output/ before their job folders were deleted.  
+**File:** `prompts/development/dev-07-repository-cleanup/1.1.0.toml`
+
+```text
+Clean up the repository without changing behaviour.
+
+- Find unused code (functions, imports, fields) with static analysis and remove it.
+- Delete generated and temporary files: Python bytecode caches, stale caches, test outputs and abandoned job folders.
+- Keep user data and anything expensive to recreate, such as completed outputs, downloaded models and cached model replies, or move it to the proper output folder first.
+- Re-run the tests afterwards to confirm nothing broke, and report what was removed and what was kept.
+```
+
+Previous version 1.0.0 (2026-10-01): Original request as written. It was repeated on 2026-10-07 as "remove unwanted files and unused files"; stored once to avoid a duplicate.
+
+```text
+remove unwanted and not used files
+```
+
+</details>
+
+<details>
+<summary><code>dev-08-model-and-key-update</code> v1.1.0: Switch the API key and use Qwen as the primary model</summary>
+
+**Purpose:** Update the OpenRouter key and model configuration so runs are less affected by rate limits.  
+**Outcome:** Key stored in .env; Qwen primary with Gemma 4 31B and NVIDIA Nemotron fallbacks; FALLBACK_MODEL accepts a comma-separated list.  
+**File:** `prompts/development/dev-08-model-and-key-update/1.1.0.toml`
+
+```text
+Update the model configuration.
+
+- Replace the OpenRouter API key with the new one. Store it only in .env, never in code or committed files.
+- Use qwen/qwen3.8-27b:free as the primary model.
+- Check which free models currently respond, and configure a fallback chain from different providers so that one provider's rate limit does not stop a run.
+- Run a live test on sample documents and report the result.
+```
+
+Previous version 1.0.0 (2026-10-01): Original request as written; the API key it contained is redacted.
+
+```text
+sk-or-v1-[REDACTED] use this key qwen/qwen3.8-27b:free
+```
+
+</details>
+
+<details>
+<summary><code>dev-09-stop-button</code> v1.1.0: Add a Stop button for long-running jobs</summary>
+
+**Purpose:** Let users stop a generation run that is taking too long.  
+**Outcome:** A Stop button appears after 30 seconds, with confirmation; cancelling interrupts in-flight requests and retry waits, and completed steps stay cached for the next run.  
+**File:** `prompts/development/dev-09-stop-button/1.1.0.toml`
+
+```text
+Let users stop a generation run that is taking too long.
+
+- Show a Stop button on the progress screen once a run has been going for 30 seconds.
+- Ask for confirmation before stopping.
+- Stop promptly, including while waiting for a model reply or a retry back-off, and free the server for the next job.
+- Show the run as stopped rather than failed, and offer to run it again. Steps that already completed must be reused rather than recomputed.
+- Cancelling a queued job must stop it before it starts.
+```
+
+Previous version 1.0.0 (2026-10-01): Original request as written.
+
+```text
+create a stop button to stop the process if it takes more than 30 seconds
+```
+
+</details>
+
+<details>
+<summary><code>dev-10-remove-samples</code> v1.1.0: Remove the bundled sample documents</summary>
+
+**Purpose:** Remove the example input documents from the project.  
+**Outcome:** The samples/ folder was deleted and the README line that referred to it was removed.  
+**File:** `prompts/development/dev-10-remove-samples/1.1.0.toml`
+
+```text
+Remove the bundled sample documents from the repository, and update any documentation or commands that refer to them.
+```
+
+Previous version 1.0.0 (2026-10-07): Original request as written.
+
+```text
+remove samples
+```
+
+</details>
+
+<details>
+<summary><code>dev-11-huggingface-kimi-provider</code> v1.1.0: Use Kimi-K3 through the Hugging Face router</summary>
+
+**Purpose:** Call models through the Hugging Face Inference Providers router, using Kimi-K3 on Together.  
+**Outcome:** A configurable provider setting (LLM_PROVIDER) with Kimi-K3 on Together was added, then reverted in dev-12 because the model is paid.  
+**File:** `prompts/development/dev-11-huggingface-kimi-provider/1.1.0.toml`
+
+```text
+Add support for calling models through the Hugging Face Inference Providers router, following the example below, and use moonshotai/Kimi-K3 served by Together as the primary model.
+
+- Make the provider configurable (OpenRouter or Hugging Face) without code changes, and read the Hugging Face token from HF_TOKEN in .env.
+- Keep OpenRouter working so that it is possible to switch back.
+- Confirm that the model is available and report its cost before relying on it.
+- SpecForge sends text only, so the image input in the example is not needed.
+
+Reference example:
+
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://router.huggingface.co/v1",
+    api_key=os.environ["HF_TOKEN"],
+)
+
+completion = client.chat.completions.create(
+    model="moonshotai/Kimi-K3:together",
+    messages=[
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Describe this image in one sentence."
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": "https://cdn.britannica.com/61/93061-050-99147DCE/Statue-of-Liberty-Island-New-York-Bay.jpg"
+                    }
+                }
+            ]
+        }
+    ],
+)
+
+print(completion.choices[0].message)
+```
+
+Previous version 1.0.0 (2026-10-07): Original request as written.
+
+```text
+use this
+
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://router.huggingface.co/v1",
+    api_key=os.environ["HF_TOKEN"],
+)
+
+completion = client.chat.completions.create(
+    model="moonshotai/Kimi-K3:together",
+    messages=[
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Describe this image in one sentence."
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": "https://cdn.britannica.com/61/93061-050-99147DCE/Statue-of-Liberty-Island-New-York-Bay.jpg"
+                    }
+                }
+            ]
+        }
+    ],
+)
+
+print(completion.choices[0].message)
+```
+
+</details>
+
+<details>
+<summary><code>dev-12-remove-kimi</code> v1.1.0: Remove the Kimi-K3 and Hugging Face provider</summary>
+
+**Purpose:** Return to OpenRouter's free models as the only backend.  
+**Outcome:** The provider switch, Hugging Face settings and related messages and documentation were removed; the free OpenRouter model chain was restored.  
+**File:** `prompts/development/dev-12-remove-kimi/1.1.0.toml`
+
+```text
+Remove the Hugging Face router and Kimi-K3 support added in dev-11, and return to OpenRouter's free models as the only provider. Remove the related configuration, error messages and documentation, and leave the application configured and working with the free model chain.
+```
+
+Previous version 1.0.0 (2026-10-07): Original request as written.
+
+```text
+remove kimi k3
+```
+
+</details>
+
+<details>
+<summary><code>dev-13-input-sources</code> v1.0.0: Support file, folder and CLI inputs with per-file tracking</summary>
+
+**Purpose:** Accept single files, multiple files and nested folders through the CLI and web UI, with validation, deduplication and per-file status.  
+**Outcome:** Release 1.1.0: a shared input collection, validation before processing, content or path deduplication, per-file status reporting, folder upload and the --check option.  
+**File:** `prompts/development/dev-13-input-sources/1.0.0.toml`
+
+```text
+### Input Source Requirement
+
+The system must support individual files, multiple files, folders, and command-line interface (CLI) inputs.
+
+- File Input: Users should be able to provide one or more individual files for processing.
+- Folder Input: Users should be able to provide a folder containing multiple files. The system must recursively scan the folder and identify all supported files within nested subfolders.
+- CLI Input: The system must provide CLI commands for specifying files, folders, and processing options without requiring the web interface.
+- Supported Formats: The system should process all configured document formats and ignore unsupported file types with an appropriate warning.
+- Batch Processing: When multiple files or a folder is provided, all supported files should be processed as a single input collection while maintaining individual file identity and metadata.
+- File-Level Tracking: The system must retain the original file name, relative folder path, file type, and processing status for every file.
+- Duplicate Handling: Duplicate files should be detected and handled according to the configured deduplication policy.
+- Error Handling: If an individual file fails during processing, the system should continue processing the remaining valid files and report failed files separately.
+- Validation: The system should validate the input path, file accessibility, supported formats, and file integrity before processing begins.
+- Consistent Processing: File, folder, and CLI inputs should use the same underlying processing pipeline to ensure consistent results regardless of the input method.
+
+### Expected Input Methods
+
+The system should support:
+
+1. Single file
+2. Multiple files
+3. Folder containing files
+4. Folder containing nested subfolders and files
+5. File or folder provided through the CLI
+6. CLI options for configuring processing parameters
+
+The system should normalize all input types into a common collection of documents before initiating downstream processing.
+```
+
+</details>
+
+<details>
+<summary><code>dev-14-git-and-prompt-management</code> v1.0.0: Add Git version control and prompt management</summary>
+
+**Purpose:** Put the project under Git with a meaningful history, and store, version and document all prompts.  
+**Outcome:** Release 1.2.0: tagged Git history, a hardened .gitignore, the versioned prompt catalog with its CLI, this development prompt history, the README overhaul and a CHANGELOG.  
+**File:** `prompts/development/dev-14-git-and-prompt-management/1.0.0.toml`
+
+```text
+Update the existing project by adding Git-based version control and a prompt management system without disrupting the existing functionality.
+
+1. Git Version Control
+
+Integrate Git into the existing project to provide proper source-code version control.
+
+Requirements:
+- Initialize the existing project as a Git repository if Git is not already configured.
+- Create an appropriate .gitignore file for the project's technology stack.
+- Ensure sensitive information such as API keys, passwords, tokens, credentials, .env files, and other secrets are excluded from version control.
+- Organize commits using clear, descriptive commit messages.
+- Maintain meaningful version history for project changes.
+- Use semantic versioning (MAJOR.MINOR.PATCH) where applicable.
+- Document the Git workflow and commonly used Git commands in the README.md.
+- Do not modify or remove existing project functionality solely for the purpose of introducing Git.
+
+2. Prompt Management
+
+Add a prompt management mechanism to the existing project for storing and maintaining prompts used by the system.
+
+Requirements:
+- Store previously used prompts in a dedicated and clearly identifiable location.
+- Prompts should be organized so they can be easily searched, reviewed, reused, and updated.
+- Each stored prompt should have a meaningful name or identifier.
+- Maintain the prompt's purpose, version, and relevant usage information where applicable.
+- Avoid storing duplicate prompts unnecessarily.
+- Preserve previous prompt versions when a prompt is modified, where practical.
+- Ensure prompt changes can be tracked through Git.
+
+3. README Prompt Documentation
+
+Update the existing README.md to document the prompts used by the project.
+
+Requirements:
+- Add a dedicated Prompt Management section to README.md.
+- Store the current and previously used prompts in a structured format that is easy for developers to understand and maintain.
+- If an existing prompt is informal, incomplete, or overly simple, rewrite it into a professional, clear, and implementation-oriented prompt while preserving its original intent.
+- Do not change the functional intent of an existing prompt unless required for clarity or correctness.
+- Clearly identify the purpose of each prompt.
+- Include prompt versions where applicable.
+- Document significant changes between prompt versions.
+- Keep the README prompt documentation synchronized with the actual prompts used by the application.
+
+4. Prompt Version Control
+
+Prompt modifications must be treated as version-controlled project changes.
+
+For each significant prompt change:
+- Assign an appropriate prompt version.
+- Record what was changed and why.
+- Preserve the previous version when historical tracking is required.
+- Commit prompt changes through Git using descriptive commit messages.
+
+5. README Maintenance
+
+The existing README.md should be enhanced rather than unnecessarily replaced.
+
+The README should document:
+- Project overview
+- Installation and setup
+- Existing functionality
+- Project structure
+- Git setup and workflow
+- Prompt management
+- Current prompts and their purposes
+- Prompt version history
+- CLI usage, if supported by the existing project
+- Configuration requirements
+- Development and contribution guidelines
+
+6. Implementation Constraints
+
+- Treat the current project as the source of truth.
+- Inspect the existing project structure and implementation before making changes.
+- Preserve all existing functionality unless a change is explicitly required.
+- Do not introduce unnecessary dependencies.
+- Follow the project's existing coding conventions and technology choices.
+- Do not hardcode credentials or sensitive configuration.
+- Ensure the project remains runnable after the changes.
+- Update documentation to accurately reflect the implemented functionality.
+- Keep Git configuration, prompt management, and documentation clean, maintainable, and suitable for future development.
+
+Expected outcome:
+
+The existing project should have a proper Git version-control structure, a maintainable prompt management system, professionally documented prompts, and an updated README.md that provides clear documentation of both the project's development workflow and its prompt history.
+```
+
+</details>
+
 #### Prompt version history
 
 | Prompt | Version | Date | Changes |
@@ -438,6 +955,32 @@ For each requirement:
 | `json_repair` | 1.0.0 | 2026-10-01 | Initial version, moved unchanged from the source code into the prompt catalog. |
 | `grounding` | 1.0.0 | 2026-10-01 | Initial version, moved unchanged from the source code into the prompt catalog. |
 | `requirement_fields` | 1.0.0 | 2026-10-01 | Initial version, moved unchanged from the source code into the prompt catalog. |
+| `dev-01-rag-agent-chain-design` | 1.1.0 | 2026-10-08 | Rewritten as a professional prompt with the same intent: names the deliverables (architecture, retrieval approach, accuracy techniques, tool choices) and what the FRD must contain. |
+| `dev-01-rag-agent-chain-design` | 1.0.0 | 2026-10-01 | Original request as written. |
+| `dev-02-build-on-free-models` | 1.1.0 | 2026-10-08 | Rewritten professionally with the same intent: names the models by ID, keeps the key in .env instead of the prompt, and lists the deliverables and the handling of free-tier rate limits. |
+| `dev-02-build-on-free-models` | 1.0.0 | 2026-10-01 | Original request as written; the API key it contained is redacted. |
+| `dev-03-upload-frontend` | 1.1.0 | 2026-10-08 | Rewritten professionally with the same intent: specifies validation, progress, results, downloads and error handling, and reuse of the existing pipeline. |
+| `dev-03-upload-frontend` | 1.0.0 | 2026-10-01 | Original request as written. |
+| `dev-04-domain-agnostic` | 1.1.0 | 2026-10-08 | Rewritten professionally with the same intent: states what must be derived from the documents, what must be removed, and how to verify it. |
+| `dev-04-domain-agnostic` | 1.0.0 | 2026-10-01 | Original request as written. |
+| `dev-05-web-hosting` | 1.1.0 | 2026-10-08 | Rewritten professionally with the same intent: defines the single start command, background jobs, progress streaming, per-job storage and documentation. |
+| `dev-05-web-hosting` | 1.0.0 | 2026-10-01 | Original request as written. |
+| `dev-06-bug-fixes-corporate-ui` | 1.1.0 | 2026-10-08 | Rewritten professionally with the same intent: lists what the bug review covers and the concrete goals of the redesign. |
+| `dev-06-bug-fixes-corporate-ui` | 1.0.0 | 2026-10-01 | Original request as written. |
+| `dev-07-repository-cleanup` | 1.1.0 | 2026-10-08 | Rewritten professionally with the same intent: separates unused code from generated files, says what must be kept, and requires verification. |
+| `dev-07-repository-cleanup` | 1.0.0 | 2026-10-01 | Original request as written. It was repeated on 2026-10-07 as "remove unwanted files and unused files"; stored once to avoid a duplicate. |
+| `dev-08-model-and-key-update` | 1.1.0 | 2026-10-08 | Rewritten professionally with the same intent: keeps the key out of the prompt and code, and asks for a cross-provider fallback chain and a live test. |
+| `dev-08-model-and-key-update` | 1.0.0 | 2026-10-01 | Original request as written; the API key it contained is redacted. |
+| `dev-09-stop-button` | 1.1.0 | 2026-10-08 | Rewritten professionally with the same intent: defines when the button appears, confirmation, how quickly it must stop, and what happens to completed work and queued jobs. |
+| `dev-09-stop-button` | 1.0.0 | 2026-10-01 | Original request as written. |
+| `dev-10-remove-samples` | 1.1.0 | 2026-10-08 | Rewritten professionally with the same intent: includes updating documentation that refers to the samples. |
+| `dev-10-remove-samples` | 1.0.0 | 2026-10-07 | Original request as written. |
+| `dev-11-huggingface-kimi-provider` | 1.1.0 | 2026-10-08 | Rewritten professionally with the same intent: states the provider, model, configuration and cost check, and notes that only text input is needed. |
+| `dev-11-huggingface-kimi-provider` | 1.0.0 | 2026-10-07 | Original request as written. |
+| `dev-12-remove-kimi` | 1.1.0 | 2026-10-08 | Rewritten professionally with the same intent: names what to remove and the configuration to leave in place. |
+| `dev-12-remove-kimi` | 1.0.0 | 2026-10-07 | Original request as written. |
+| `dev-13-input-sources` | 1.0.0 | 2026-10-08 | Recorded as written: it was already a complete, implementation-ready specification. |
+| `dev-14-git-and-prompt-management` | 1.0.0 | 2026-10-08 | Recorded as written: it was already a complete, implementation-ready specification. |
 
 <!-- END GENERATED: prompt catalog -->
 

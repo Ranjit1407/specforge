@@ -1,0 +1,12 @@
+id = "dev-07-repository-cleanup"
+version = "1.0.0"
+title = "Remove unused code and files"
+kind = "development"
+status = "implemented"
+date = "2026-10-01"
+purpose = "Remove dead code and unneeded files from the project without changing behaviour."
+outcome = "Unused code, bytecode caches, stale caches and test runs removed; completed FRDs moved to output/ before their job folders were deleted."
+changes = "Original request as written. It was repeated on 2026-10-07 as \"remove unwanted files and unused files\"; stored once to avoid a duplicate."
+
+template = '''
+remove unwanted and not used files'''

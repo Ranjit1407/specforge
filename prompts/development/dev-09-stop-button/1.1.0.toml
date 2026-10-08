@@ -1,0 +1,18 @@
+id = "dev-09-stop-button"
+version = "1.1.0"
+title = "Add a Stop button for long-running jobs"
+kind = "development"
+status = "implemented"
+date = "2026-10-08"
+purpose = "Let users stop a generation run that is taking too long."
+outcome = "A Stop button appears after 30 seconds, with confirmation; cancelling interrupts in-flight requests and retry waits, and completed steps stay cached for the next run."
+changes = "Rewritten professionally with the same intent: defines when the button appears, confirmation, how quickly it must stop, and what happens to completed work and queued jobs."
+
+template = '''
+Let users stop a generation run that is taking too long.
+
+- Show a Stop button on the progress screen once a run has been going for 30 seconds.
+- Ask for confirmation before stopping.
+- Stop promptly, including while waiting for a model reply or a retry back-off, and free the server for the next job.
+- Show the run as stopped rather than failed, and offer to run it again. Steps that already completed must be reused rather than recomputed.
+- Cancelling a queued job must stop it before it starts.'''
