@@ -1,0 +1,17 @@
+id = "dev-13-publish-to-github"
+version = "1.1.0"
+title = "Publish the project to GitHub"
+kind = "development"
+status = "implemented"
+date = "2026-10-08"
+purpose = "Create a GitHub repository for the project and push the code and release history to it."
+outcome = "Private repository github.com/Ranjit1407/specforge created; main and tags v1.0.0 to v1.2.0 pushed, and later commits pushed the same way."
+changes = "Rewritten professionally with the same intent: adds the pre-push secret check, the visibility default, pushing tags, upstream tracking for later pushes, and what to report."
+
+template = '''
+Publish the project to GitHub as a new repository named specforge under the account Ranjit1407.
+
+- Before pushing, scan the full Git history for secrets and confirm that .env and other ignored files are not tracked.
+- Create the repository as private unless told otherwise, add it as the origin remote, and push the main branch with all release tags.
+- Make the local main branch track the remote, so later commits are published with git push.
+- Report the repository URL and its visibility.'''

@@ -1,0 +1,12 @@
+id = "dev-14-prompt-history-update"
+version = "1.0.0"
+title = "Update the development prompt history"
+kind = "development"
+status = "implemented"
+date = "2026-10-08"
+purpose = "Keep the development prompt history current: drop reverted prompts and add the latest requests."
+outcome = "The reverted Hugging Face (Kimi-K3) request and the request that reverted it were removed and the history renumbered; the GitHub publishing request and the second cleanup request were added."
+changes = "Original request as written."
+
+template = '''
+remove the reverted prompts and add the recents prompts'''

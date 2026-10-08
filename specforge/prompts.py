@@ -272,9 +272,10 @@ def readme_section() -> str:
     out += [""] + [_details(p, history(p.id)[:-1]) + "\n" for p in runtime]
     if development:
         out += ["#### Development prompts", "",
-                "Requests that shaped the codebase, in order. Version 1.0.0 is the request as originally written "
-                "(credentials redacted); 1.1.0, where present, is a professional rewrite with the same intent, "
-                "ready to reuse.", "",
+                "Requests that shaped the current codebase, in order; requests that were later reverted are left out. "
+                "Version 1.0.0 is the request as originally written (credentials redacted). Later versions are a "
+                "professional rewrite with the same intent, or the same request restated later; each version's change "
+                "note says which.", "",
                 "| Prompt | Version | Status | Date | Request |", "| --- | --- | --- | --- | --- |"]
         out += [f"| `{p.id}` | {p.version} | {p.status} | {history(p.id)[0].date} | {_cell(p.title)} |" for p in development]
         out += [""] + [_details(p, history(p.id)[:-1]) + "\n" for p in development]

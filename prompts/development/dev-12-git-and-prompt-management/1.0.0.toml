@@ -1,4 +1,4 @@
-id = "dev-14-git-and-prompt-management"
+id = "dev-12-git-and-prompt-management"
 version = "1.0.0"
 title = "Add Git version control and prompt management"
 kind = "development"

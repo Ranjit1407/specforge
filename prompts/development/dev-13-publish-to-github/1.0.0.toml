@@ -1,0 +1,12 @@
+id = "dev-13-publish-to-github"
+version = "1.0.0"
+title = "Publish the project to GitHub"
+kind = "development"
+status = "implemented"
+date = "2026-10-08"
+purpose = "Create a GitHub repository for the project and push the code and release history to it."
+outcome = "Private repository github.com/Ranjit1407/specforge created; main and tags v1.0.0 to v1.2.0 pushed, and later commits pushed the same way."
+changes = "Original request as written. The later request \"push it to github\" (2026-10-08) asked to publish new commits to the same repository; it is recorded here instead of as a duplicate prompt."
+
+template = '''
+https://github.com/Ranjit1407 create a new repo named specforge'''

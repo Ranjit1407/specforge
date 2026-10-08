@@ -533,7 +533,7 @@ For each requirement:
 
 #### Development prompts
 
-Requests that shaped the codebase, in order. Version 1.0.0 is the request as originally written (credentials redacted); 1.1.0, where present, is a professional rewrite with the same intent, ready to reuse.
+Requests that shaped the current codebase, in order; requests that were later reverted are left out. Version 1.0.0 is the request as originally written (credentials redacted). Later versions are a professional rewrite with the same intent, or the same request restated later; each version's change note says which.
 
 | Prompt | Version | Status | Date | Request |
 | --- | --- | --- | --- | --- |
@@ -543,14 +543,14 @@ Requests that shaped the codebase, in order. Version 1.0.0 is the request as ori
 | `dev-04-domain-agnostic` | 1.1.0 | implemented | 2026-10-01 | Make generation domain-agnostic |
 | `dev-05-web-hosting` | 1.1.0 | implemented | 2026-10-01 | Host the application as a local web server |
 | `dev-06-bug-fixes-corporate-ui` | 1.1.0 | implemented | 2026-10-01 | Fix bugs and restyle the frontend in a corporate style |
-| `dev-07-repository-cleanup` | 1.1.0 | implemented | 2026-10-01 | Remove unused code and files |
+| `dev-07-repository-cleanup` | 1.2.0 | implemented | 2026-10-01 | Remove unused code and files |
 | `dev-08-model-and-key-update` | 1.1.0 | implemented | 2026-10-01 | Switch the API key and use Qwen as the primary model |
 | `dev-09-stop-button` | 1.1.0 | implemented | 2026-10-01 | Add a Stop button for long-running jobs |
 | `dev-10-remove-samples` | 1.1.0 | implemented | 2026-10-07 | Remove the bundled sample documents |
-| `dev-11-huggingface-kimi-provider` | 1.1.0 | reverted | 2026-10-07 | Use Kimi-K3 through the Hugging Face router |
-| `dev-12-remove-kimi` | 1.1.0 | implemented | 2026-10-07 | Remove the Kimi-K3 and Hugging Face provider |
-| `dev-13-input-sources` | 1.0.0 | implemented | 2026-10-08 | Support file, folder and CLI inputs with per-file tracking |
-| `dev-14-git-and-prompt-management` | 1.0.0 | implemented | 2026-10-08 | Add Git version control and prompt management |
+| `dev-11-input-sources` | 1.0.0 | implemented | 2026-10-08 | Support file, folder and CLI inputs with per-file tracking |
+| `dev-12-git-and-prompt-management` | 1.0.0 | implemented | 2026-10-08 | Add Git version control and prompt management |
+| `dev-13-publish-to-github` | 1.1.0 | implemented | 2026-10-08 | Publish the project to GitHub |
+| `dev-14-prompt-history-update` | 1.1.0 | implemented | 2026-10-08 | Update the development prompt history |
 
 <details>
 <summary><code>dev-01-rag-agent-chain-design</code> v1.1.0: Design a RAG agent chain that generates an FRD</summary>
@@ -714,11 +714,27 @@ check for any bugs and rectify make the frontend more attractive in corporate st
 </details>
 
 <details>
-<summary><code>dev-07-repository-cleanup</code> v1.1.0: Remove unused code and files</summary>
+<summary><code>dev-07-repository-cleanup</code> v1.2.0: Remove unused code and files</summary>
 
-**Purpose:** Remove dead code and unneeded files from the project without changing behaviour.  
-**Outcome:** Unused code, bytecode caches, stale caches and test runs removed; completed FRDs moved to output/ before their job folders were deleted.  
-**File:** `prompts/development/dev-07-repository-cleanup/1.1.0.toml`
+**Purpose:** Remove unused, duplicate, temporary, generated and outdated content from the project without changing behaviour.  
+**Outcome:** Two cleanup passes: the first removed dead code, caches, test runs and stale outputs; the second removed an unused prompt field, an unused CSS variable, redundant .gitattributes rules, duplicated README text, local reply and embedding caches and test output.  
+**File:** `prompts/development/dev-07-repository-cleanup/1.2.0.toml`
+
+```text
+Remove unused files, duplicate files, temporary files, generated files, test artifacts, cache files, and obsolete documentation.
+
+Remove unused code, dependencies, configurations, and assets where they are no longer required.
+
+Remove irrelevant or outdated knowledge, prompts, examples, and reference content that is not used by the application.
+
+Do not remove files or knowledge that are required by the current application.
+
+Do not modify existing functionality unnecessarily.
+
+Ensure the project remains fully functional after cleanup.
+```
+
+Previous version 1.1.0 (2026-10-08): Rewritten professionally with the same intent: separates unused code from generated files, says what must be kept, and requires verification.
 
 ```text
 Clean up the repository without changing behaviour.
@@ -806,118 +822,11 @@ remove samples
 </details>
 
 <details>
-<summary><code>dev-11-huggingface-kimi-provider</code> v1.1.0: Use Kimi-K3 through the Hugging Face router</summary>
-
-**Purpose:** Call models through the Hugging Face Inference Providers router, using Kimi-K3 on Together.  
-**Outcome:** A configurable provider setting (LLM_PROVIDER) with Kimi-K3 on Together was added, then reverted in dev-12 because the model is paid.  
-**File:** `prompts/development/dev-11-huggingface-kimi-provider/1.1.0.toml`
-
-```text
-Add support for calling models through the Hugging Face Inference Providers router, following the example below, and use moonshotai/Kimi-K3 served by Together as the primary model.
-
-- Make the provider configurable (OpenRouter or Hugging Face) without code changes, and read the Hugging Face token from HF_TOKEN in .env.
-- Keep OpenRouter working so that it is possible to switch back.
-- Confirm that the model is available and report its cost before relying on it.
-- SpecForge sends text only, so the image input in the example is not needed.
-
-Reference example:
-
-import os
-from openai import OpenAI
-
-client = OpenAI(
-    base_url="https://router.huggingface.co/v1",
-    api_key=os.environ["HF_TOKEN"],
-)
-
-completion = client.chat.completions.create(
-    model="moonshotai/Kimi-K3:together",
-    messages=[
-        {
-            "role": "user",
-            "content": [
-                {
-                    "type": "text",
-                    "text": "Describe this image in one sentence."
-                },
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": "https://cdn.britannica.com/61/93061-050-99147DCE/Statue-of-Liberty-Island-New-York-Bay.jpg"
-                    }
-                }
-            ]
-        }
-    ],
-)
-
-print(completion.choices[0].message)
-```
-
-Previous version 1.0.0 (2026-10-07): Original request as written.
-
-```text
-use this
-
-import os
-from openai import OpenAI
-
-client = OpenAI(
-    base_url="https://router.huggingface.co/v1",
-    api_key=os.environ["HF_TOKEN"],
-)
-
-completion = client.chat.completions.create(
-    model="moonshotai/Kimi-K3:together",
-    messages=[
-        {
-            "role": "user",
-            "content": [
-                {
-                    "type": "text",
-                    "text": "Describe this image in one sentence."
-                },
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": "https://cdn.britannica.com/61/93061-050-99147DCE/Statue-of-Liberty-Island-New-York-Bay.jpg"
-                    }
-                }
-            ]
-        }
-    ],
-)
-
-print(completion.choices[0].message)
-```
-
-</details>
-
-<details>
-<summary><code>dev-12-remove-kimi</code> v1.1.0: Remove the Kimi-K3 and Hugging Face provider</summary>
-
-**Purpose:** Return to OpenRouter's free models as the only backend.  
-**Outcome:** The provider switch, Hugging Face settings and related messages and documentation were removed; the free OpenRouter model chain was restored.  
-**File:** `prompts/development/dev-12-remove-kimi/1.1.0.toml`
-
-```text
-Remove the Hugging Face router and Kimi-K3 support added in dev-11, and return to OpenRouter's free models as the only provider. Remove the related configuration, error messages and documentation, and leave the application configured and working with the free model chain.
-```
-
-Previous version 1.0.0 (2026-10-07): Original request as written.
-
-```text
-remove kimi k3
-```
-
-</details>
-
-<details>
-<summary><code>dev-13-input-sources</code> v1.0.0: Support file, folder and CLI inputs with per-file tracking</summary>
+<summary><code>dev-11-input-sources</code> v1.0.0: Support file, folder and CLI inputs with per-file tracking</summary>
 
 **Purpose:** Accept single files, multiple files and nested folders through the CLI and web UI, with validation, deduplication and per-file status.  
 **Outcome:** Release 1.1.0: a shared input collection, validation before processing, content or path deduplication, per-file status reporting, folder upload and the --check option.  
-**File:** `prompts/development/dev-13-input-sources/1.0.0.toml`
+**File:** `prompts/development/dev-11-input-sources/1.0.0.toml`
 
 ```text
 ### Input Source Requirement
@@ -952,11 +861,11 @@ The system should normalize all input types into a common collection of document
 </details>
 
 <details>
-<summary><code>dev-14-git-and-prompt-management</code> v1.0.0: Add Git version control and prompt management</summary>
+<summary><code>dev-12-git-and-prompt-management</code> v1.0.0: Add Git version control and prompt management</summary>
 
 **Purpose:** Put the project under Git with a meaningful history, and store, version and document all prompts.  
 **Outcome:** Release 1.2.0: tagged Git history, a hardened .gitignore, the versioned prompt catalog with its CLI, this development prompt history, the README overhaul and a CHANGELOG.  
-**File:** `prompts/development/dev-14-git-and-prompt-management/1.0.0.toml`
+**File:** `prompts/development/dev-12-git-and-prompt-management/1.0.0.toml`
 
 ```text
 Update the existing project by adding Git-based version control and a prompt management system without disrupting the existing functionality.
@@ -1048,6 +957,54 @@ The existing project should have a proper Git version-control structure, a maint
 
 </details>
 
+<details>
+<summary><code>dev-13-publish-to-github</code> v1.1.0: Publish the project to GitHub</summary>
+
+**Purpose:** Create a GitHub repository for the project and push the code and release history to it.  
+**Outcome:** Private repository github.com/Ranjit1407/specforge created; main and tags v1.0.0 to v1.2.0 pushed, and later commits pushed the same way.  
+**File:** `prompts/development/dev-13-publish-to-github/1.1.0.toml`
+
+```text
+Publish the project to GitHub as a new repository named specforge under the account Ranjit1407.
+
+- Before pushing, scan the full Git history for secrets and confirm that .env and other ignored files are not tracked.
+- Create the repository as private unless told otherwise, add it as the origin remote, and push the main branch with all release tags.
+- Make the local main branch track the remote, so later commits are published with git push.
+- Report the repository URL and its visibility.
+```
+
+Previous version 1.0.0 (2026-10-08): Original request as written. The later request "push it to github" (2026-10-08) asked to publish new commits to the same repository; it is recorded here instead of as a duplicate prompt.
+
+```text
+https://github.com/Ranjit1407 create a new repo named specforge
+```
+
+</details>
+
+<details>
+<summary><code>dev-14-prompt-history-update</code> v1.1.0: Update the development prompt history</summary>
+
+**Purpose:** Keep the development prompt history current: drop reverted prompts and add the latest requests.  
+**Outcome:** The reverted Hugging Face (Kimi-K3) request and the request that reverted it were removed and the history renumbered; the GitHub publishing request and the second cleanup request were added.  
+**File:** `prompts/development/dev-14-prompt-history-update/1.1.0.toml`
+
+```text
+Update the development prompt history in prompts/development/.
+
+- Remove prompts whose changes were reverted, together with the prompt that reverted them, because neither affects the current codebase. Keep the numbering contiguous.
+- Add every request made since the last update that changed the project, with its original wording (credentials redacted) and a professional rewrite where the original is informal.
+- When a new request repeats or extends an existing one, record it as a new version of that prompt instead of a new prompt.
+- Run python -m specforge.prompts check and sync-readme so the README matches the catalog.
+```
+
+Previous version 1.0.0 (2026-10-08): Original request as written.
+
+```text
+remove the reverted prompts and add the recents prompts
+```
+
+</details>
+
 #### Prompt version history
 
 | Prompt | Version | Date | Changes |
@@ -1074,6 +1031,7 @@ The existing project should have a proper Git version-control structure, a maint
 | `dev-05-web-hosting` | 1.0.0 | 2026-10-01 | Original request as written. |
 | `dev-06-bug-fixes-corporate-ui` | 1.1.0 | 2026-10-08 | Rewritten professionally with the same intent: lists what the bug review covers and the concrete goals of the redesign. |
 | `dev-06-bug-fixes-corporate-ui` | 1.0.0 | 2026-10-01 | Original request as written. |
+| `dev-07-repository-cleanup` | 1.2.0 | 2026-10-08 | Restated on 2026-10-08 as a full specification that also covers duplicate and generated files, unused dependencies, configurations and assets, and outdated prompts and documentation. Recorded as written, since it is already implementation-ready. |
 | `dev-07-repository-cleanup` | 1.1.0 | 2026-10-08 | Rewritten professionally with the same intent: separates unused code from generated files, says what must be kept, and requires verification. |
 | `dev-07-repository-cleanup` | 1.0.0 | 2026-10-01 | Original request as written. It was repeated on 2026-10-07 as "remove unwanted files and unused files"; stored once to avoid a duplicate. |
 | `dev-08-model-and-key-update` | 1.1.0 | 2026-10-08 | Rewritten professionally with the same intent: keeps the key out of the prompt and code, and asks for a cross-provider fallback chain and a live test. |
@@ -1082,12 +1040,12 @@ The existing project should have a proper Git version-control structure, a maint
 | `dev-09-stop-button` | 1.0.0 | 2026-10-01 | Original request as written. |
 | `dev-10-remove-samples` | 1.1.0 | 2026-10-08 | Rewritten professionally with the same intent: includes updating documentation that refers to the samples. |
 | `dev-10-remove-samples` | 1.0.0 | 2026-10-07 | Original request as written. |
-| `dev-11-huggingface-kimi-provider` | 1.1.0 | 2026-10-08 | Rewritten professionally with the same intent: states the provider, model, configuration and cost check, and notes that only text input is needed. |
-| `dev-11-huggingface-kimi-provider` | 1.0.0 | 2026-10-07 | Original request as written. |
-| `dev-12-remove-kimi` | 1.1.0 | 2026-10-08 | Rewritten professionally with the same intent: names what to remove and the configuration to leave in place. |
-| `dev-12-remove-kimi` | 1.0.0 | 2026-10-07 | Original request as written. |
-| `dev-13-input-sources` | 1.0.0 | 2026-10-08 | Recorded as written: it was already a complete, implementation-ready specification. |
-| `dev-14-git-and-prompt-management` | 1.0.0 | 2026-10-08 | Recorded as written: it was already a complete, implementation-ready specification. |
+| `dev-11-input-sources` | 1.0.0 | 2026-10-08 | Recorded as written: it was already a complete, implementation-ready specification. |
+| `dev-12-git-and-prompt-management` | 1.0.0 | 2026-10-08 | Recorded as written: it was already a complete, implementation-ready specification. |
+| `dev-13-publish-to-github` | 1.1.0 | 2026-10-08 | Rewritten professionally with the same intent: adds the pre-push secret check, the visibility default, pushing tags, upstream tracking for later pushes, and what to report. |
+| `dev-13-publish-to-github` | 1.0.0 | 2026-10-08 | Original request as written. The later request "push it to github" (2026-10-08) asked to publish new commits to the same repository; it is recorded here instead of as a duplicate prompt. |
+| `dev-14-prompt-history-update` | 1.1.0 | 2026-10-08 | Rewritten professionally with the same intent: defines which prompts count as reverted, how to number and de-duplicate new entries, and the validation to run. |
+| `dev-14-prompt-history-update` | 1.0.0 | 2026-10-08 | Original request as written. |
 
 <!-- END GENERATED: prompt catalog -->
 

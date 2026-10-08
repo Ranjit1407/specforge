@@ -1,4 +1,4 @@
-id = "dev-13-input-sources"
+id = "dev-11-input-sources"
 version = "1.0.0"
 title = "Support file, folder and CLI inputs with per-file tracking"
 kind = "development"

@@ -1,0 +1,22 @@
+id = "dev-07-repository-cleanup"
+version = "1.2.0"
+title = "Remove unused code and files"
+kind = "development"
+status = "implemented"
+date = "2026-10-08"
+purpose = "Remove unused, duplicate, temporary, generated and outdated content from the project without changing behaviour."
+outcome = "Two cleanup passes: the first removed dead code, caches, test runs and stale outputs; the second removed an unused prompt field, an unused CSS variable, redundant .gitattributes rules, duplicated README text, local reply and embedding caches and test output."
+changes = "Restated on 2026-10-08 as a full specification that also covers duplicate and generated files, unused dependencies, configurations and assets, and outdated prompts and documentation. Recorded as written, since it is already implementation-ready."
+
+template = '''
+Remove unused files, duplicate files, temporary files, generated files, test artifacts, cache files, and obsolete documentation.
+
+Remove unused code, dependencies, configurations, and assets where they are no longer required.
+
+Remove irrelevant or outdated knowledge, prompts, examples, and reference content that is not used by the application.
+
+Do not remove files or knowledge that are required by the current application.
+
+Do not modify existing functionality unnecessarily.
+
+Ensure the project remains fully functional after cleanup.'''

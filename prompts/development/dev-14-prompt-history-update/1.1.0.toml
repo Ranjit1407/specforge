@@ -1,0 +1,17 @@
+id = "dev-14-prompt-history-update"
+version = "1.1.0"
+title = "Update the development prompt history"
+kind = "development"
+status = "implemented"
+date = "2026-10-08"
+purpose = "Keep the development prompt history current: drop reverted prompts and add the latest requests."
+outcome = "The reverted Hugging Face (Kimi-K3) request and the request that reverted it were removed and the history renumbered; the GitHub publishing request and the second cleanup request were added."
+changes = "Rewritten professionally with the same intent: defines which prompts count as reverted, how to number and de-duplicate new entries, and the validation to run."
+
+template = '''
+Update the development prompt history in prompts/development/.
+
+- Remove prompts whose changes were reverted, together with the prompt that reverted them, because neither affects the current codebase. Keep the numbering contiguous.
+- Add every request made since the last update that changed the project, with its original wording (credentials redacted) and a professional rewrite where the original is informal.
+- When a new request repeats or extends an existing one, record it as a new version of that prompt instead of a new prompt.
+- Run python -m specforge.prompts check and sync-readme so the README matches the catalog.'''
