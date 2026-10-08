@@ -240,7 +240,11 @@ def _fenced(body: str) -> str:
     return f"{fence}text\n{body}\n{fence}"
 
 
-def _details(p: Prompt, previous: list[Prompt]) -> str:
+def _link(p: Prompt, text: str | None = None) -> str:
+    return f"[{text or p.version}]({p.path.relative_to(ROOT).as_posix()})"
+
+
+def _details(p: Prompt) -> str:
     meta = [f"**Purpose:** {p.purpose}"]
     if p.used_by:
         meta.append(f"**Used by:** {p.used_by}")
@@ -248,17 +252,14 @@ def _details(p: Prompt, previous: list[Prompt]) -> str:
         meta.append("**Variables:** " + ", ".join(f"`{{{v}}}`" for v in p.variables))
     if p.output:
         meta.append(f"**Output:** {p.output}")
-    if p.outcome:
-        meta.append(f"**Outcome:** {p.outcome}")
-    meta.append(f"**File:** `{p.path.relative_to(ROOT).as_posix()}`")
-    parts = [f"<details>\n<summary><code>{p.id}</code> v{p.version}: {p.title}</summary>\n", "  \n".join(meta), "", _fenced(p.template)]
-    for old in reversed(previous):
-        parts += ["", f"Previous version {old.version} ({old.date}): {old.changes}", "", _fenced(old.template)]
-    return "\n".join(parts) + "\n\n</details>"
+    meta.append(f"**File:** {_link(p, p.path.relative_to(ROOT).as_posix())}")
+    head = f"<details>\n<summary><code>{p.id}</code> v{p.version}: {p.title}</summary>\n"
+    return "\n".join([head, "  \n".join(meta), "", _fenced(p.template)]) + "\n\n</details>"
 
 
 def readme_section() -> str:
-    # Templates in pipeline order, then fragments.
+    """The README catalog: tables for every prompt and version, full text only for the runtime prompts in use.
+    Older versions and development prompts are linked to their files instead of repeated."""
     pipeline_order = ["document_reader", "scope_analyst", "specification_analyst", "requirements_extractor",
                       "coverage_sweep", "reviewer", "refiner", "access_analyst", "use_case_writer", "writer"]
     runtime = sorted(latest("runtime"), key=lambda p: (
@@ -266,22 +267,25 @@ def readme_section() -> str:
     development = sorted(latest("development"), key=lambda p: p.id)
     out = [README_BEGIN, "", "#### Runtime prompts", "",
            "These are sent to the model by the application. Templates are filled with `str.format`; fragments are "
-           "shared instructions inserted into templates.", "",
+           "shared instructions inserted into templates. Expand a prompt to read the version in use.", "",
            "| Prompt | Version | Kind | Purpose | Used by | Output |", "| --- | --- | --- | --- | --- | --- |"]
-    out += [f"| `{p.id}` | {p.version} | {p.kind} | {_cell(p.purpose)} | {_cell(p.used_by)} | {_cell(p.output)} |" for p in runtime]
-    out += [""] + [_details(p, history(p.id)[:-1]) + "\n" for p in runtime]
+    out += [f"| `{p.id}` | {_link(p)} | {p.kind} | {_cell(p.purpose)} | {_cell(p.used_by)} | {_cell(p.output)} |"
+            for p in runtime]
+    out += [""] + [_details(p) + "\n" for p in runtime]
     if development:
         out += ["#### Development prompts", "",
                 "Requests that shaped the current codebase, in order; requests that were later reverted are left out. "
                 "Version 1.0.0 is the request as originally written (credentials redacted). Later versions are a "
-                "professional rewrite with the same intent, or the same request restated later; each version's change "
-                "note says which.", "",
-                "| Prompt | Version | Status | Date | Request |", "| --- | --- | --- | --- | --- |"]
-        out += [f"| `{p.id}` | {p.version} | {p.status} | {history(p.id)[0].date} | {_cell(p.title)} |" for p in development]
-        out += [""] + [_details(p, history(p.id)[:-1]) + "\n" for p in development]
-    out += ["#### Prompt version history", "", "| Prompt | Version | Date | Changes |", "| --- | --- | --- | --- |"]
+                "professional rewrite with the same intent, or the same request restated later. Follow the links, or "
+                "run `python -m specforge.prompts show <id>`, to read them.", "",
+                "| Prompt | Versions | Status | Date | Request | Outcome |", "| --- | --- | --- | --- | --- | --- |"]
+        out += [f"| `{p.id}` | {', '.join(_link(v) for v in history(p.id))} | {p.status} | {history(p.id)[0].date} | "
+                f"{_cell(p.title)} | {_cell(p.outcome)} |" for p in development]
+        out.append("")
+    out += ["#### Prompt version history", "", "Every version of every prompt, newest first. Each version links to its file.", "",
+            "| Prompt | Version | Date | Changes |", "| --- | --- | --- | --- |"]
     for p in runtime + development:
-        out += [f"| `{v.id}` | {v.version} | {v.date} | {_cell(v.changes)} |" for v in reversed(history(p.id))]
+        out += [f"| `{v.id}` | {_link(v)} | {v.date} | {_cell(v.changes)} |" for v in reversed(history(p.id))]
     out += ["", README_END]
     return "\n".join(out)
 

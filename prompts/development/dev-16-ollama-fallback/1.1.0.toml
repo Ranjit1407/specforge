@@ -1,0 +1,20 @@
+id = "dev-16-ollama-fallback"
+title = "Add a local Ollama fallback"
+kind = "development"
+status = "implemented"
+purpose = "Keep runs going when the hosted free models are rate-limited or their quota is used up, by falling back to a local Ollama model."
+outcome = "Release 2.1.0: Ollama fallback after a failed round of OpenRouter models, a permanent switch when the quota is exhausted, Ollama-only mode, JSON mode, per-prompt context sizing and cancellable streaming."
+version = "1.1.0"
+date = "2026-10-08"
+changes = "Rewritten professionally with the same intent: defines when the fallback applies, the configuration, and how context limits, JSON output and cancellation must behave."
+
+template = '''
+Add local models served by Ollama as the last fallback for model calls.
+
+- Configure them in .env (model names, server URL, context size); the feature is off when no Ollama model is set.
+- When every hosted model fails for a request, send that request to the local model instead of waiting through the retry back-off.
+- When the hosted provider reports that the daily quota or credit is exhausted, use the local model for the rest of the run.
+- Allow running on local models only when no hosted API key is configured.
+- Never send a prompt larger than the local context window, because the model would silently lose the instructions; size the context to each prompt instead.
+- Request JSON output from the local model where the pipeline expects JSON, and make the Stop button stop local generation too.
+- Document the setup and behaviour in the README.'''

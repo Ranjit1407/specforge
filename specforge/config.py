@@ -7,10 +7,15 @@ from dotenv import load_dotenv
 load_dotenv()
 os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
 
+
 def _models() -> list[str]:
     primary = os.environ.get("PRIMARY_MODEL", "google/gemma-4-31b-it:free")
     fallbacks = os.environ.get("FALLBACK_MODEL", "google/gemma-4-26b-a4b-it:free").split(",")
     return list(dict.fromkeys(m.strip() for m in [primary, *fallbacks] if m.strip()))
+
+
+def _ollama_models() -> list[str]:
+    return list(dict.fromkeys(m.strip() for m in os.environ.get("OLLAMA_MODEL", "").split(",") if m.strip()))
 
 
 @dataclass
@@ -19,6 +24,12 @@ class Settings:
     models: list[str] = field(default_factory=_models)
     base_url: str = "https://openrouter.ai/api/v1"
     request_timeout: float = 300.0
+    # Local Ollama models, used when every OpenRouter model has failed or its quota is used up.
+    ollama_models: list[str] = field(default_factory=_ollama_models)
+    ollama_url: str = field(default_factory=lambda: os.environ.get("OLLAMA_URL", "http://localhost:11434").rstrip("/"))
+    ollama_num_ctx: int = field(default_factory=lambda: int(os.environ.get("OLLAMA_NUM_CTX", "32768")))
+    ollama_max_tokens: int = 8192
+    ollama_timeout: float = 1800.0
     max_attempts: int = 8
     cache_dir: Path = Path(__file__).resolve().parent.parent / ".cache"
     use_cache: bool = True

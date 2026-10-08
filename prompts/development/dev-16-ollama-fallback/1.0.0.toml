@@ -1,0 +1,12 @@
+id = "dev-16-ollama-fallback"
+title = "Add a local Ollama fallback"
+kind = "development"
+status = "implemented"
+purpose = "Keep runs going when the hosted free models are rate-limited or their quota is used up, by falling back to a local Ollama model."
+outcome = "Release 2.1.0: Ollama fallback after a failed round of OpenRouter models, a permanent switch when the quota is exhausted, Ollama-only mode, JSON mode, per-prompt context sizing and cancellable streaming."
+version = "1.0.0"
+date = "2026-10-08"
+changes = "Original request as written."
+
+template = '''
+add local ollama as fallback models when all other model token with exhausted'''

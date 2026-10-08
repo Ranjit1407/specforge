@@ -1,6 +1,6 @@
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, BeforeValidator, Field, field_validator
 
 NOT_SPECIFIED = "Not specified in source material"
 
@@ -14,25 +14,39 @@ _PRIORITY_ALIASES = {
 }
 
 
-def _as_list(v):
+def _to_text(v) -> str:
+    """Models sometimes answer a text field with a list or an object; keep the content as readable text."""
+    if v is None:
+        return ""
+    if isinstance(v, str):
+        return v
+    if isinstance(v, dict):
+        return "; ".join(f"{k}: {_to_text(x)}" for k, x in v.items() if _to_text(x).strip())
+    if isinstance(v, (list, tuple)):
+        return "; ".join(t for t in (_to_text(x) for x in v) if t.strip())
+    return str(v)
+
+
+def _to_text_list(v) -> list[str]:
     if v is None or v == "":
         return []
-    return [v] if isinstance(v, str) else v
+    items = v if isinstance(v, (list, tuple)) else [v]
+    return [t for t in (_to_text(x) for x in items) if t.strip()]
+
+
+Text = Annotated[str, BeforeValidator(_to_text)]
+TextList = Annotated[list[str], BeforeValidator(_to_text_list)]
 
 
 class Sourced(BaseModel):
     """Anything that cites source passages by excerpt ID, e.g. ["D1-004"]."""
-    sources: list[str] = Field(default_factory=list)
+    sources: TextList = Field(default_factory=list)
 
-    @field_validator("sources", mode="before")
-    @classmethod
-    def _sources_as_list(cls, v):
-        return _as_list(v)
 
 
 class Prioritised(Sourced):
     priority: Priority = "To be confirmed"
-    priority_basis: str = ""  # the source wording the priority was taken from
+    priority_basis: Text = ""  # the source wording the priority was taken from
 
     @field_validator("priority", mode="before")
     @classmethod
@@ -42,44 +56,40 @@ class Prioritised(Sourced):
 
 
 class Module(BaseModel):
-    name: str
-    description: str = ""
-    search_queries: list[str] = Field(default_factory=list)
+    name: Text
+    description: Text = ""
+    search_queries: TextList = Field(default_factory=list)
 
 
 class UserRole(Sourced):
-    role: str
-    description: str = ""
-    responsibilities: list[str] = Field(default_factory=list)
-    access: str = ""  # access level or restrictions stated in the sources
+    role: Text
+    description: Text = ""
+    responsibilities: TextList = Field(default_factory=list)
+    access: Text = ""  # access level or restrictions stated in the sources
 
 
 class Person(Sourced):
-    name: str
-    title: str = ""
-    email: str = ""
-    phone: str = ""
+    name: Text
+    title: Text = ""
+    email: Text = ""
+    phone: Text = ""
     signoff_authority: bool = False
 
 
 class OpenQuestion(Sourced):
-    id: str = ""
-    question: str
-    related_requirements: list[str] = Field(default_factory=list)
-    owner: str = ""
-    status: str = "Open"
+    id: Text = ""
+    question: Text
+    related_requirements: TextList = Field(default_factory=list)
+    owner: Text = ""
+    status: Text = "Open"
 
-    @field_validator("related_requirements", mode="before")
-    @classmethod
-    def _related_as_list(cls, v):
-        return _as_list(v)
 
 
 class ProjectContext(BaseModel):
-    title: str
-    purpose: str
-    scope_in: list[str] = Field(default_factory=list)
-    scope_out: list[str] = Field(default_factory=list)
+    title: Text
+    purpose: Text
+    scope_in: TextList = Field(default_factory=list)
+    scope_out: TextList = Field(default_factory=list)
     roles: list[UserRole] = Field(default_factory=list)
     people: list[Person] = Field(default_factory=list)
     modules: list[Module] = Field(min_length=1)
@@ -87,42 +97,42 @@ class ProjectContext(BaseModel):
 
 
 class Assumption(Sourced):
-    id: str = ""
-    assumption: str
+    id: Text = ""
+    assumption: Text
 
 
 class Dependency(Sourced):
-    id: str = ""
-    dependency: str
-    description: str = ""
+    id: Text = ""
+    dependency: Text
+    description: Text = ""
 
 
 class StatusDefinition(Sourced):
-    status: str
-    description: str = ""
-    transition: str = ""
+    status: Text
+    description: Text = ""
+    transition: Text = ""
 
 
 class NonFunctionalRequirement(Sourced):
-    id: str = ""
-    category: str
-    requirement: str
+    id: Text = ""
+    category: Text
+    requirement: Text
 
 
 class Integration(Sourced):
-    system: str
-    purpose: str = ""
-    data_exchanged: str = ""
-    direction: str = ""
-    authentication: str = ""
-    trigger: str = ""
-    error_handling: str = ""
-    dependency: str = ""
+    system: Text
+    purpose: Text = ""
+    data_exchanged: Text = ""
+    direction: Text = ""
+    authentication: Text = ""
+    trigger: Text = ""
+    error_handling: Text = ""
+    dependency: Text = ""
 
 
 class UIGuideline(Sourced):
-    area: str
-    guideline: str
+    area: Text
+    guideline: Text
 
 
 class Specification(BaseModel):
@@ -133,26 +143,22 @@ class Specification(BaseModel):
     non_functional: list[NonFunctionalRequirement] = Field(default_factory=list)
     integrations: list[Integration] = Field(default_factory=list)
     ui_guidelines: list[UIGuideline] = Field(default_factory=list)
-    ui_standards: str = ""  # set when the sources say to follow an existing application's UI standards
+    ui_standards: Text = ""  # set when the sources say to follow an existing application's UI standards
     open_questions: list[OpenQuestion] = Field(default_factory=list)
 
 
 class Requirement(Prioritised):
-    id: str = ""
-    module: str = ""
-    title: str
-    description: str
-    actor: str = ""
-    inputs: list[str] = Field(default_factory=list)
-    outputs: list[str] = Field(default_factory=list)
-    business_rules: list[str] = Field(default_factory=list)
-    acceptance_criteria: list[str] = Field(default_factory=list)
-    notes: list[str] = Field(default_factory=list)
+    id: Text = ""
+    module: Text = ""
+    title: Text
+    description: Text
+    actor: Text = ""
+    inputs: TextList = Field(default_factory=list)
+    outputs: TextList = Field(default_factory=list)
+    business_rules: TextList = Field(default_factory=list)
+    acceptance_criteria: TextList = Field(default_factory=list)
+    notes: TextList = Field(default_factory=list)
 
-    @field_validator("notes", mode="before")
-    @classmethod
-    def _notes_as_list(cls, v):
-        return _as_list(v)
 
 
 class RequirementList(BaseModel):
@@ -160,17 +166,17 @@ class RequirementList(BaseModel):
 
 
 class AccessRequirement(Prioritised):
-    id: str = ""
-    requirement: str
-    module: str = ""
-    acceptance_criteria: list[str] = Field(default_factory=list)
+    id: Text = ""
+    requirement: Text
+    module: Text = ""
+    acceptance_criteria: TextList = Field(default_factory=list)
 
 
 class AccessEntry(Sourced):
-    role: str
-    scope: str = ""
-    allowed_actions: list[str] = Field(default_factory=list)
-    restrictions: list[str] = Field(default_factory=list)
+    role: Text
+    scope: Text = ""
+    allowed_actions: TextList = Field(default_factory=list)
+    restrictions: TextList = Field(default_factory=list)
 
 
 class AccessModel(BaseModel):
@@ -180,17 +186,17 @@ class AccessModel(BaseModel):
 
 
 class UseCase(Sourced):
-    id: str = ""
-    name: str
-    module: str = ""
-    user_story: str = ""
-    roles: list[str] = Field(default_factory=list)
-    preconditions: list[str] = Field(default_factory=list)
-    actions: list[str] = Field(default_factory=list)
-    business_rules: list[str] = Field(default_factory=list)
-    expected_result: str = ""
-    exceptions: list[str] = Field(default_factory=list)
-    requirements: list[str] = Field(default_factory=list)
+    id: Text = ""
+    name: Text
+    module: Text = ""
+    user_story: Text = ""
+    roles: TextList = Field(default_factory=list)
+    preconditions: TextList = Field(default_factory=list)
+    actions: TextList = Field(default_factory=list)
+    business_rules: TextList = Field(default_factory=list)
+    expected_result: Text = ""
+    exceptions: TextList = Field(default_factory=list)
+    requirements: TextList = Field(default_factory=list)
 
 
 class UseCaseList(BaseModel):
@@ -198,20 +204,16 @@ class UseCaseList(BaseModel):
 
 
 class Merge(BaseModel):
-    keep: str
-    drop: list[str]
-    reason: str = ""
+    keep: Text
+    drop: TextList
+    reason: Text = ""
 
-    @field_validator("drop", mode="before")
-    @classmethod
-    def _drop_as_list(cls, v):
-        return [v] if isinstance(v, str) else v
 
 
 class Issue(BaseModel):
-    req_id: str
+    req_id: Text
     type: Literal["ambiguous", "conflict", "incomplete", "untestable", "other"] = "other"
-    note: str
+    note: Text
 
     @field_validator("type", mode="before")
     @classmethod
@@ -227,16 +229,16 @@ class Review(BaseModel):
 
 
 class Summary(BaseModel):
-    objective: str
-    overview: str
-    initiative_purpose: str = ""
+    objective: Text
+    overview: Text
+    initiative_purpose: Text = ""
 
 
 class DocumentInfo(BaseModel):
-    title: str
-    prepared_by: str = ""
-    date: str
-    version: str = "1.0 (Draft)"
+    title: Text
+    prepared_by: Text = ""
+    date: Text
+    version: Text = "1.0 (Draft)"
 
 
 class SourceFile(BaseModel):

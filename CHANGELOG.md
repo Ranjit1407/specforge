@@ -2,6 +2,20 @@
 
 All notable changes to SpecForge are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [semantic versioning](https://semver.org/). Prompt versions are tracked separately in `prompts/` and in the README's prompt version history.
 
+## [2.1.0] - 2026-10-08
+
+### Added
+
+- Local fallback through Ollama (`OLLAMA_MODEL`, `OLLAMA_URL`, `OLLAMA_NUM_CTX`). When every OpenRouter model fails in a round, the request goes to the local model instead of waiting; when OpenRouter's daily free-model limit or credit balance is used up, or the key is rejected, the rest of the run stays local. Without an OpenRouter key, SpecForge runs on Ollama alone.
+- Local requests use Ollama's JSON mode and a context window sized to each prompt; prompts too large for the window are not sent, rather than silently truncated. Replies are streamed, so the Stop button also stops local generation.
+
+### Changed
+
+- Model replies that answer a text field with a list or an object (common with small local models) are kept as readable text instead of failing validation, for example `{"type": "Excel"}` becomes `type: Excel`.
+- The README prompt catalog shows the full text only for the runtime prompts in use; every other version and the development prompts are listed in tables that link to their files. The README is half its previous length.
+- README: the clone URL and repository section point at the GitHub repository, and the release examples use current versions.
+- Default models: `nvidia/nemotron-3-super-120b-a12b:free` first, then `google/gemma-4-31b-it:free` and `nvidia/nemotron-3-ultra-550b-a55b:free`, because `qwen/qwen3.8-27b:free` is no longer free on OpenRouter.
+
 ## [2.0.0] - 2026-10-08
 
 ### Changed (breaking)
@@ -62,6 +76,7 @@ All notable changes to SpecForge are recorded here. The format follows [Keep a C
 - OpenRouter client with model fallback, exponential backoff, JSON validation and repair, and an on-disk reply cache.
 - FastAPI web UI with live progress, a Stop button, an FRD preview, and Word, Markdown and JSON downloads; CLI entry point.
 
+[2.1.0]: ../../compare/v2.0.0...v2.1.0
 [2.0.0]: ../../compare/v1.2.0...v2.0.0
 [1.2.0]: ../../compare/v1.1.0...v1.2.0
 [1.1.0]: ../../compare/v1.0.0...v1.1.0
