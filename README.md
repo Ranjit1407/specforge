@@ -1185,6 +1185,4 @@ git push origin main --tags
 
 OpenRouter free models allow 50 requests per day (1,000 per day once the account has $10 of credit). A typical run makes roughly 8 to 15 calls. When every model is rate-limited, the client backs off before giving up; retrying resumes from cached steps.
 
-To use other models, set PRIMARY_MODEL and FALLBACK_MODEL in .env to any OpenRouter model ID.
-
 The web server keeps jobs in memory. Uploaded files and results are stored under `runs/<job-id>/`, but the job list resets when the server restarts.

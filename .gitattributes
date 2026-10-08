@@ -1,6 +1,2 @@
-# Store text with LF line endings in the repository; check out with the platform's native endings.
+# Store text with LF line endings in the repository (binary files are detected automatically).
 * text=auto
-
-*.docx binary
-*.pdf binary
-*.png binary

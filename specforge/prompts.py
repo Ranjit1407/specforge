@@ -15,7 +15,7 @@ import re
 import string
 import sys
 import tomllib
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
@@ -54,7 +54,6 @@ class Prompt:
     variables: tuple[str, ...] = ()
     output: str = ""
     outcome: str = ""
-    extra: dict = field(default_factory=dict, compare=False)
 
     @property
     def semver(self) -> tuple[int, int, int]:
@@ -82,10 +81,10 @@ def _load_file(path: Path, category: str) -> Prompt:
     missing = [k for k in REQUIRED if k not in data]
     if missing:
         raise PromptError(f"{path.relative_to(ROOT)}: missing {', '.join(missing)}")
-    known = {f for f in Prompt.__dataclass_fields__ if f not in ("category", "path", "extra")}
+    known = {f for f in Prompt.__dataclass_fields__ if f not in ("category", "path")}
     values = {k: (tuple(v) if k == "variables" else str(v) if isinstance(v, datetime.date) else v)
               for k, v in data.items() if k in known}
-    return Prompt(**values, category=category, path=path, extra={k: v for k, v in data.items() if k not in known})
+    return Prompt(**values, category=category, path=path)
 
 
 @lru_cache(maxsize=1)
