@@ -2,7 +2,7 @@
 
 SpecForge generates a Functional Requirements Document (FRD) from any set of source documents (BRDs, meeting notes, emails, specs, RFPs) using a chain of ten LLM agents over a hybrid RAG index. It is built for business analysts, product owners and delivery teams who have to turn scattered project material into a reviewable FRD. It is domain-agnostic: modules, user roles, search queries and requirements all come from the documents you provide. It runs on free models through OpenRouter, with a local Ollama model as a fallback.
 
-Current version: **2.1.0**. See [CHANGELOG.md](CHANGELOG.md) for release history.
+Current version: **2.1.0**.
 
 ## Contents
 
@@ -136,7 +136,6 @@ SpecForge/
 ├── .env.example             configuration template (copy to .env)
 ├── .gitignore               files excluded from Git
 ├── .gitattributes           line-ending and binary-file rules
-├── CHANGELOG.md             release history
 └── README.md                project documentation
 ```
 
@@ -149,7 +148,7 @@ Created at run time and git-ignored: `.env`, `.venv/`, `.cache/` (embedding mode
 - Git.
 - An OpenRouter API key (free at [openrouter.ai](https://openrouter.ai)), or [Ollama](https://ollama.com/download) with a downloaded model, or both. See [Configuration](#10-configuration).
 - Internet access on the first run to download the embedding model (about 67 MB), unless you use `--no-dense`.
-- Read access to the repository, which is private: ask the maintainer.
+- Read access to the public repository.
 
 ## 7. Installation and Setup
 
@@ -452,9 +451,9 @@ Open an issue on the repository. For a bug, include the command or the web steps
 
 ### Repository and branches
 
-The code is hosted at https://github.com/Ranjit1407/specforge (a private repository: ask the owner for access). After cloning, `origin` already points at GitHub.
+The code is hosted publicly at https://github.com/Ranjit1407/specforge. After cloning, `origin` already points at GitHub.
 
-- `main` is always runnable. Releases are tagged on it (`v1.0.0` to `v2.1.0`, listed in [CHANGELOG.md](CHANGELOG.md)).
+- `main` is always runnable. Releases are tagged on it (`v1.0.0` to `v2.1.0`).
 - Do work on short-lived branches: `feature/<topic>`, `fix/<topic>`, `docs/<topic>`, or `prompt/<prompt-id>-v<version>` for prompt changes.
 - Merge back with a pull request, or locally with `git merge --no-ff <branch>`, after the checks in [Testing](#12-testing) pass.
 
@@ -471,7 +470,7 @@ The code is hosted at https://github.com/Ranjit1407/specforge (a private reposit
 
 1. Set up the environment as in [Installation and Setup](#7-installation-and-setup) and create a branch.
 2. Make the change and run the checks in [Testing](#12-testing).
-3. Update the documentation in the same change: this README, `CHANGELOG.md` for user-visible changes, and `sync-readme` for prompt changes.
+3. Update the documentation in the same change: this README and `sync-readme` for prompt changes.
 4. Commit following the rules below and open a pull request that describes the change, how you checked it, and any prompt versions it introduces.
 
 ### Commit messages
@@ -502,8 +501,8 @@ Prompts have their own versions, described in [Changing a prompt](#changing-a-pr
 To make a release:
 
 ```bash
-# 1. update __version__ in specforge/__init__.py and add a section to CHANGELOG.md
-git add specforge/__init__.py CHANGELOG.md
+# 1. update __version__ in specforge/__init__.py
+git add specforge/__init__.py
 git commit -m "Release 2.2.0"
 git tag -a v2.2.0 -m "SpecForge 2.2.0: <one-line summary>"
 git push origin main --tags
@@ -1040,8 +1039,8 @@ Requests that shaped the current codebase, in order; requests that were later re
 | `dev-09-stop-button` | [1.0.0](prompts/development/dev-09-stop-button/1.0.0.toml), [1.1.0](prompts/development/dev-09-stop-button/1.1.0.toml), [1.2.0](prompts/development/dev-09-stop-button/1.2.0.toml) | implemented | 2026-10-01 | Add a Stop button for long-running jobs | A Stop button appears after 30 seconds, with confirmation; cancelling interrupts in-flight requests and retry waits, and completed steps stay cached for the next run. |
 | `dev-10-remove-samples` | [1.0.0](prompts/development/dev-10-remove-samples/1.0.0.toml), [1.1.0](prompts/development/dev-10-remove-samples/1.1.0.toml) | implemented | 2026-10-07 | Remove the bundled sample documents | The samples/ folder was deleted and the README line that referred to it was removed. |
 | `dev-11-input-sources` | [1.0.0](prompts/development/dev-11-input-sources/1.0.0.toml), [1.1.0](prompts/development/dev-11-input-sources/1.1.0.toml) | implemented | 2026-10-08 | Support file, folder and CLI inputs with per-file tracking | Release 1.1.0: a shared input collection, validation before processing, content or path deduplication, per-file status reporting, folder upload and the --check option. |
-| `dev-12-git-and-prompt-management` | [1.0.0](prompts/development/dev-12-git-and-prompt-management/1.0.0.toml) | implemented | 2026-10-08 | Add Git version control and prompt management | Release 1.2.0: tagged Git history, a hardened .gitignore, the versioned prompt catalog with its CLI, this development prompt history, the README overhaul and a CHANGELOG. |
-| `dev-13-publish-to-github` | [1.0.0](prompts/development/dev-13-publish-to-github/1.0.0.toml), [1.1.0](prompts/development/dev-13-publish-to-github/1.1.0.toml) | implemented | 2026-10-08 | Publish the project to GitHub | Private repository github.com/Ranjit1407/specforge created; main and tags v1.0.0 to v1.2.0 pushed, and later commits pushed the same way. |
+| `dev-12-git-and-prompt-management` | [1.0.0](prompts/development/dev-12-git-and-prompt-management/1.0.0.toml) | implemented | 2026-10-08 | Add Git version control and prompt management | Release 1.2.0: tagged Git history, a hardened .gitignore, the versioned prompt catalog with its CLI, this development prompt history, and the README overhaul. |
+| `dev-13-publish-to-github` | [1.0.0](prompts/development/dev-13-publish-to-github/1.0.0.toml), [1.1.0](prompts/development/dev-13-publish-to-github/1.1.0.toml) | implemented | 2026-10-08 | Publish the project to GitHub | Public repository github.com/Ranjit1407/specforge created; main and tags v1.0.0 to v1.2.0 pushed, and later commits pushed the same way. |
 | `dev-14-prompt-history-update` | [1.0.0](prompts/development/dev-14-prompt-history-update/1.0.0.toml), [1.1.0](prompts/development/dev-14-prompt-history-update/1.1.0.toml) | implemented | 2026-10-08 | Update the development prompt history | The reverted Hugging Face (Kimi-K3) request and the request that reverted it were removed and the history renumbered; the GitHub publishing request and the second cleanup request were added. |
 | `dev-15-frd-template` | [1.0.0](prompts/development/dev-15-frd-template/1.0.0.toml), [1.1.0](prompts/development/dev-15-frd-template/1.1.0.toml) | implemented | 2026-10-08 | Generate FRDs in the 21-section enterprise template | Release 2.0.0: the 21-section template, Specification Analyst, Access Analyst and Use Case Writer agents, template-scale priorities, FR/RBAR/UC/AS/DEP/NFR/OQ identifiers, merged open questions, traceability status and a server-rendered preview. |
 | `dev-16-ollama-fallback` | [1.0.0](prompts/development/dev-16-ollama-fallback/1.0.0.toml), [1.1.0](prompts/development/dev-16-ollama-fallback/1.1.0.toml), [1.2.0](prompts/development/dev-16-ollama-fallback/1.2.0.toml) | implemented | 2026-10-08 | Add a local Ollama fallback | Release 2.1.0: Ollama fallback after a failed round of OpenRouter models, a permanent switch when the quota is exhausted, Ollama-only mode, JSON mode, per-prompt context sizing and cancellable streaming. |
@@ -1105,7 +1104,7 @@ Every version of every prompt, newest first. Each version links to its file.
 | `dev-11-input-sources` | [1.1.0](prompts/development/dev-11-input-sources/1.1.0.toml) | 2026-10-09 | Professional rewrite with the same intent: one list of testable requirements in place of separate requirement and input-method lists, naming the per-file statuses, the failure rule and where the per-file report appears. |
 | `dev-11-input-sources` | [1.0.0](prompts/development/dev-11-input-sources/1.0.0.toml) | 2026-10-08 | Recorded as written: it was already a complete, implementation-ready specification. |
 | `dev-12-git-and-prompt-management` | [1.0.0](prompts/development/dev-12-git-and-prompt-management/1.0.0.toml) | 2026-10-08 | Recorded as written: it was already a complete, implementation-ready specification. |
-| `dev-13-publish-to-github` | [1.1.0](prompts/development/dev-13-publish-to-github/1.1.0.toml) | 2026-10-08 | Rewritten professionally with the same intent: adds the pre-push secret check, the visibility default, pushing tags, upstream tracking for later pushes, and what to report. |
+| `dev-13-publish-to-github` | [1.1.0](prompts/development/dev-13-publish-to-github/1.1.0.toml) | 2026-10-08 | Rewritten professionally with the same intent: adds the pre-push secret check, the public visibility default, pushing tags, upstream tracking for later pushes, and what to report. |
 | `dev-13-publish-to-github` | [1.0.0](prompts/development/dev-13-publish-to-github/1.0.0.toml) | 2026-10-08 | Original request as written. The later request "push it to github" (2026-10-08) asked to publish new commits to the same repository; it is recorded here instead of as a duplicate prompt. |
 | `dev-14-prompt-history-update` | [1.1.0](prompts/development/dev-14-prompt-history-update/1.1.0.toml) | 2026-10-08 | Rewritten professionally with the same intent: defines which prompts count as reverted, how to number and de-duplicate new entries, and the validation to run. |
 | `dev-14-prompt-history-update` | [1.0.0](prompts/development/dev-14-prompt-history-update/1.0.0.toml) | 2026-10-08 | Original request as written. |
@@ -1119,10 +1118,11 @@ Every version of every prompt, newest first. Each version links to its file.
 
 ## 18. License
 
-No license has been chosen yet, and the repository has no `LICENSE` file. Until one is added, the code is private and may not be copied, modified or redistributed without the maintainer's permission.
+No license has been chosen yet, and the repository has no `LICENSE` file. Although the code is publicly accessible, it may not be copied, modified or redistributed without the maintainer's permission until a license is added.
 
 ## 19. Contact
 
 **Maintainer:** [Ranjit1407](https://github.com/Ranjit1407)  
-**Repository:** https://github.com/Ranjit1407/specforge (private)  
+**Repository:** https://github.com/Ranjit1407/specforge (public)
+
 **Issues:** https://github.com/Ranjit1407/specforge/issues

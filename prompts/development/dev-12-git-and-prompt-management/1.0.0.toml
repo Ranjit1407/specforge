@@ -5,7 +5,7 @@ kind = "development"
 status = "implemented"
 date = "2026-10-08"
 purpose = "Put the project under Git with a meaningful history, and store, version and document all prompts."
-outcome = "Release 1.2.0: tagged Git history, a hardened .gitignore, the versioned prompt catalog with its CLI, this development prompt history, the README overhaul and a CHANGELOG."
+outcome = "Release 1.2.0: tagged Git history, a hardened .gitignore, the versioned prompt catalog with its CLI, this development prompt history, the README overhaul and release documentation."
 changes = "Recorded as written: it was already a complete, implementation-ready specification."
 
 template = '''
