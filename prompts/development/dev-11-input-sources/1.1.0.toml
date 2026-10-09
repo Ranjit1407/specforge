@@ -1,0 +1,22 @@
+id = "dev-11-input-sources"
+version = "1.1.0"
+title = "Support file, folder and CLI inputs with per-file tracking"
+kind = "development"
+status = "implemented"
+date = "2026-10-09"
+purpose = "Accept single files, multiple files and nested folders through the CLI and web UI, with validation, deduplication and per-file status."
+outcome = "Release 1.1.0: a shared input collection, validation before processing, content or path deduplication, per-file status reporting, folder upload and the --check option."
+changes = "Professional rewrite with the same intent: one list of testable requirements in place of separate requirement and input-method lists, naming the per-file statuses, the failure rule and where the per-file report appears."
+
+template = '''
+Extend input handling so the generator accepts a single file, multiple files, a folder, or nested folders, from both the web interface and the CLI.
+
+Requirements:
+- Scan folders recursively and collect every supported file (PDF, Word, Markdown, plain text). Skip unsupported types with a warning.
+- Validate each input before processing: the path exists, the file is readable and non-empty, and its format is valid.
+- Normalise all inputs into one collection that preserves each file's name, relative path, type, size and processing status (processed, skipped, duplicate, failed).
+- Detect duplicates according to a configurable policy (by content or by path).
+- If a file fails, continue with the rest and report the failure. Fail the run only when no file can be read.
+- Provide CLI options for inputs and processing parameters, plus a validation-only mode that lists the inputs without calling the model.
+- Route web, file, folder and CLI inputs through the same pipeline so the same inputs always produce the same result.
+- Include the per-file report in the CLI output, the web results page, the FRD appendix and the JSON export.'''

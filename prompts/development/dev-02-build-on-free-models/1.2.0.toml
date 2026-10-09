@@ -1,0 +1,24 @@
+id = "dev-02-build-on-free-models"
+version = "1.2.0"
+title = "Build the project on free OpenRouter models"
+kind = "development"
+status = "implemented"
+date = "2026-10-09"
+purpose = "Implement the designed system as a runnable project that uses free Gemma 4 models through OpenRouter."
+outcome = "The SpecForge package: ingestion, hybrid retriever, seven-agent pipeline, OpenRouter client with fallback, backoff and caching, CLI, and Word/Markdown/JSON export."
+changes = "Made the prompt self-contained (no reference to dev-01) and listed the deliverables separately, adding schema validation of every model reply."
+
+template = '''
+Implement the RAG agent-chain FRD generator as a runnable Python project.
+
+Model access:
+- Use free models through OpenRouter: google/gemma-4-31b-it:free as the primary model and google/gemma-4-26b-a4b-it:free as the fallback.
+- Read the OpenRouter API key from a git-ignored .env file and provide a committed .env.example. Never hardcode credentials.
+- Free models are rate-limited: retry with exponential backoff, fall back between models, and cache validated replies on disk so an interrupted run resumes without repeating completed calls.
+
+Deliverables:
+- Ingestion of PDF, Word, Markdown and plain-text files.
+- A hybrid retrieval index (keyword and embedding search).
+- The agent chain, with every model reply validated against a schema.
+- Export of the FRD as Word, Markdown and JSON.
+- A command-line entry point and a README covering setup and usage.'''

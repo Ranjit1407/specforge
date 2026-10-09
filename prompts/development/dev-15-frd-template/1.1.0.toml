@@ -1,0 +1,43 @@
+id = "dev-15-frd-template"
+version = "1.1.0"
+title = "Generate FRDs in the 21-section enterprise template"
+kind = "development"
+status = "implemented"
+date = "2026-10-09"
+purpose = "Make every generated FRD follow a fixed 21-section enterprise template with strict source traceability and no invented content."
+outcome = "Release 2.0.0: the 21-section template, Specification Analyst, Access Analyst and Use Case Writer agents, template-scale priorities, FR/RBAR/UC/AS/DEP/NFR/OQ identifiers, merged open questions, traceability status and a server-rendered preview."
+changes = "Professional condensed rewrite with the same intent: states it as a change to the generator, gives each of the 21 sections on one line with its fields and identifiers, groups the generation rules, and records that code, not the model, builds the structure."
+
+template = '''
+Update the FRD generator so every document follows the 21-section enterprise template below. Content must come strictly from the source material (requirements, specifications, meeting notes, emails, change requests). Never invent requirements, people, values or priorities. Record missing, unclear or conflicting information as an open question, assumption or dependency.
+
+Template:
+1. Document Information: title, prepared by, date, version.
+2. Stakeholder - Document Sign-off Authority: name, title, sign-off date, contact.
+3. Team Contact Information: name, title, email.
+4. Revision History: version, date, author, description of change.
+5. Objective: the initiative's objective, and how stakeholders, developers, testers, reviewers and approvers use the document.
+6. Overview: 6.1 Purpose of the Initiative, 6.2 In-Scope, 6.3 Out-of-Scope.
+7. End User Roles: role, description, responsibilities, access or restrictions.
+8. Functional Requirements Summary: ID (FR-001...), description, priority, module, acceptance criteria, source reference.
+9. Role-Based Access Summary: ID (RBAR-001...), authorization requirement, priority, module, acceptance criteria, source reference.
+10. Detailed Functional Requirements: one use case per user goal, with user story ("As a..., I want to... so that..."), roles, preconditions, step-by-step actions, business rules, expected result, exception handling and source traceability.
+11. Role-Based Access Matrix: role, access scope, allowed actions, restrictions; consistent with sections 8-10.
+12. Assumptions (AS-001...) and Dependencies (DEP-001...), each with a source reference.
+13. Status Definitions: status, description, transition or condition.
+14. Priority Definitions: Critical, High, Medium, Low.
+15. Non-Functional Requirements: performance, security, availability, scalability, reliability, usability, accessibility, maintainability, auditability, data protection.
+16. Integration Requirements: per system, purpose, data exchanged, direction, authentication, trigger or frequency, error handling, dependency, source.
+17. UI and Interaction Guidelines: navigation, screens, forms, tables, filters, search, pagination, actions, role-based visibility, validation messages; name any existing UI standard the sources require instead of inventing one.
+18. Open Questions and Clarifications: ID (OQ-001...), question, related requirement, source, status, owner.
+19. Requirements Traceability Matrix: requirement, source, related use case, acceptance criteria, status.
+20. Acceptance Criteria: measurable, observable criteria for every requirement.
+21. Document Sign-off: name, role, approval status, sign-off date, comments.
+
+Generation rules:
+- Assign a priority only when the sources support it; otherwise mark it "To be confirmed".
+- Write each requirement as one specific, testable, unambiguous behaviour, preserving the sources' terminology.
+- Merge duplicates while keeping every supporting source; never resolve conflicts silently.
+- Write "Not specified in source material" where information is absent.
+- Keep numbering, identifiers and terminology consistent across all sections.
+- The LLM supplies content; code builds the structure, numbering, identifiers and tables.'''

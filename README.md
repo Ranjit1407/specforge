@@ -1,23 +1,44 @@
 # SpecForge
 
-SpecForge generates a Functional Requirements Document (FRD) from any set of source documents (BRDs, meeting notes, emails, specs, RFPs) using a chain of LLM agents over a hybrid RAG index. It is domain-agnostic: modules, user roles, search queries and requirements all come from the documents you provide. It runs on free models through OpenRouter.
+SpecForge generates a Functional Requirements Document (FRD) from any set of source documents (BRDs, meeting notes, emails, specs, RFPs) using a chain of ten LLM agents over a hybrid RAG index. It is built for business analysts, product owners and delivery teams who have to turn scattered project material into a reviewable FRD. It is domain-agnostic: modules, user roles, search queries and requirements all come from the documents you provide. It runs on free models through OpenRouter, with a local Ollama model as a fallback.
 
 Current version: **2.1.0**. See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Contents
 
-- [Features](#features)
-- [Installation and setup](#installation-and-setup)
-- [Configuration](#configuration)
-- [Usage](#usage)
-- [How it works](#how-it-works)
-- [Project structure](#project-structure)
-- [Prompt management](#prompt-management)
-- [Git workflow](#git-workflow)
-- [Development and contribution guidelines](#development-and-contribution-guidelines)
-- [Free-tier limits and runtime notes](#free-tier-limits-and-runtime-notes)
+1. [Overview](#1-overview)
+2. [Key Features](#2-key-features)
+3. [Technology Stack](#3-technology-stack)
+4. [System Architecture](#4-system-architecture)
+5. [Project Structure](#5-project-structure)
+6. [Prerequisites](#6-prerequisites)
+7. [Installation and Setup](#7-installation-and-setup)
+8. [Running the Project](#8-running-the-project)
+9. [Usage](#9-usage)
+10. [Configuration](#10-configuration)
+11. [API Documentation](#11-api-documentation)
+12. [Testing](#12-testing)
+13. [Screenshots and Demo](#13-screenshots-and-demo)
+14. [Security](#14-security)
+15. [Known Limitations](#15-known-limitations)
+16. [Future Enhancements](#16-future-enhancements)
+17. [Contributing](#17-contributing)
+18. [License](#18-license)
+19. [Contact](#19-contact)
 
-## Features
+## 1. Overview
+
+Writing an FRD usually means days of reading BRDs, workshop notes, emails and change requests and rewriting them as requirements. SpecForge produces the first draft in one run. It reads every file, identifies the modules and user roles, writes testable requirements with acceptance criteria, reviews and refines them, and builds a 21-section enterprise FRD in Word, Markdown and JSON.
+
+Three properties make the draft trustworthy enough to review:
+
+- **Grounded:** every requirement cites the source passages it came from, and the FRD ends with a traceability matrix.
+- **Nothing invented:** priorities are set only when the sources support them, missing information reads "Not specified in source material", and conflicts become open questions instead of being resolved silently.
+- **Free to run:** it works on OpenRouter's free models, or entirely on your own computer with Ollama.
+
+SpecForge has two front ends over the same pipeline: a command-line tool and a local web UI.
+
+## 2. Key Features
 
 - **Any input shape**: a single file, several files, folders and nested subfolders (`.pdf`, `.docx`, `.md`, `.txt`), from the web UI or the CLI, with validation, deduplication and a per-file status report.
 - **Enterprise FRD template**: a 21-section document covering document information, sign-off authority, team contacts, revision history, objective, overview and scope, end-user roles, the functional requirements summary, role-based access requirements, detailed use cases, the access matrix, assumptions and dependencies, status and priority definitions, non-functional, integration and UI requirements, open questions, the traceability matrix, acceptance criteria and sign-off. See [The FRD template](#the-frd-template).
@@ -30,130 +51,19 @@ Current version: **2.1.0**. See [CHANGELOG.md](CHANGELOG.md) for release history
 - **Local fallback**: when every OpenRouter model fails, or the daily free quota is used up, requests go to a local [Ollama](https://ollama.com) model, so a run can still finish. Ollama can also be the only backend.
 - **Managed prompts**: every prompt is a versioned file with documented history (see [Prompt management](#prompt-management)).
 
-## Installation and setup
+## 3. Technology Stack
 
-Requirements: Python 3.11 or newer, Git, and an OpenRouter API key (free at openrouter.ai). Optional: Ollama for the local fallback (see [Local fallback with Ollama](#local-fallback-with-ollama)).
+| Component | Technology |
+|---|---|
+| Frontend | One static HTML file with vanilla JavaScript (no build step); Server-Sent Events for live progress |
+| Backend | Python 3.11+, FastAPI and Uvicorn (web); argparse and Rich (CLI) |
+| Database | None. Caches, uploads and outputs are plain files under `.cache/`, `runs/` and `output/` |
+| AI / ML | OpenRouter free models through the OpenAI SDK; Ollama for local models; fastembed with `BAAI/bge-small-en-v1.5` embeddings; rank-bm25; Pydantic for validating every model reply |
+| APIs / Integrations | OpenRouter API, Ollama HTTP API; pypdf and python-docx for reading inputs and writing `FRD.docx` |
+| Testing | No automated test suite yet; `python -m specforge.prompts check`, `--check` runs and manual end-to-end runs (see [Testing](#12-testing)) |
+| Deployment | Runs locally on Windows, macOS or Linux; no hosted deployment |
 
-Windows (PowerShell):
-
-```powershell
-git clone https://github.com/Ranjit1407/specforge.git SpecForge
-cd SpecForge
-python -m venv .venv
-.\.venv\Scripts\pip install -r requirements.txt
-copy .env.example .env      # then put your OpenRouter key in .env
-.\.venv\Scripts\python -m specforge --version
-```
-
-macOS or Linux:
-
-```bash
-git clone https://github.com/Ranjit1407/specforge.git SpecForge
-cd SpecForge
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-cp .env.example .env        # then put your OpenRouter key in .env
-.venv/bin/python -m specforge --version
-```
-
-The first run downloads the embedding model (about 67 MB) into `.cache/`. Use `--no-dense` to skip it and use keyword search only.
-
-## Configuration
-
-Settings are read from `.env` in the project root. `.env` is git-ignored; `.env.example` is the committed template. Never put keys in code, prompts or committed files.
-
-| Variable | Required | Meaning |
-| --- | --- | --- |
-| `OPENROUTER_API_KEY` | Yes, unless `OLLAMA_MODEL` is set | Your OpenRouter API key |
-| `PRIMARY_MODEL` | No | OpenRouter model ID tried first (default `google/gemma-4-31b-it:free`) |
-| `FALLBACK_MODEL` | No | Comma-separated model IDs tried in order when the primary fails or is rate-limited |
-| `OLLAMA_MODEL` | No | Comma-separated local Ollama models used when every OpenRouter model fails (for example `qwen2.5:7b`) |
-| `OLLAMA_URL` | No | Ollama server address (default `http://localhost:11434`) |
-| `OLLAMA_NUM_CTX` | No | Largest context window SpecForge asks Ollama for, in tokens (default `32768`) |
-
-Example:
-
-```ini
-OPENROUTER_API_KEY=sk-or-v1-...
-PRIMARY_MODEL=nvidia/nemotron-3-super-120b-a12b:free
-FALLBACK_MODEL=google/gemma-4-31b-it:free,nvidia/nemotron-3-ultra-550b-a55b:free
-OLLAMA_MODEL=qwen2.5:7b
-```
-
-Pipeline defaults (passage size, retrieval depth, context budget, retries, cache) are in [specforge/config.py](specforge/config.py), and the most useful ones can be overridden per run with CLI options.
-
-Free models come and go on OpenRouter. If a model starts failing with "unavailable for free" (HTTP 404), replace it in `.env`; https://openrouter.ai/models?max_price=0 lists the current free models.
-
-### Local fallback with Ollama
-
-SpecForge can fall back to a model running on your own computer through [Ollama](https://ollama.com):
-
-1. Install Ollama and pull a model that is good at following instructions and writing JSON. `qwen2.5:7b` (about 4.7 GB) runs well on a laptop GPU with 6 GB of memory:
-   ```powershell
-   ollama pull qwen2.5:7b
-   ```
-2. Add `OLLAMA_MODEL=qwen2.5:7b` to `.env`, and keep Ollama running (it starts with Windows by default).
-
-How the fallback works:
-
-- Every request tries the OpenRouter models first. If all of them fail in a round (rate-limited, unavailable or erroring), the same request goes straight to the local model instead of waiting through the back-off.
-- When OpenRouter reports that the daily free-model limit or the credit balance is used up, or rejects the API key, the rest of the run uses the local model directly.
-- With no `OPENROUTER_API_KEY` at all, every request goes to Ollama.
-- Local replies use Ollama's JSON mode and a context window sized to each prompt, up to `OLLAMA_NUM_CTX`. A prompt too large for that window is not sent, because Ollama would silently cut off its beginning (the instructions). That can happen with very large document sets; raise `OLLAMA_NUM_CTX` if the model and your memory allow it.
-- The Stop button also stops a local generation, so a stopped run does not keep the model busy.
-- The log and the run summary name the model that answered each request, for example `ollama:qwen2.5:7b answered in 40s`.
-
-A 7B local model is slower and less thorough than the large hosted models. Expect a full run to take longer, and review its output with that in mind.
-
-## Usage
-
-### Web UI
-
-```powershell
-.\.venv\Scripts\python -m specforge.web               # http://127.0.0.1:8000
-.\.venv\Scripts\python -m specforge.web --port 8080   # another port
-```
-
-The server listens on this computer only. `--host 0.0.0.0` makes it reachable from your network, but it has no login, so use that only on a trusted network.
-
-In the web UI, drop in files or whole folders (or use **Select a folder**), optionally enter the project name and the author (**Prepared by**), and click **Generate FRD**. You can watch each agent's progress live, then preview the FRD and download it as Word, Markdown or JSON.
-
-### Command line
-
-SpecForge accepts a single file, several files, a folder, nested subfolders, or any mix of these. The web UI and the CLI feed the same pipeline, so the same inputs give the same results.
-
-```powershell
-.\.venv\Scripts\python -m specforge brd.pdf                                   # one file
-.\.venv\Scripts\python -m specforge brd.pdf notes.txt minutes.docx             # several files
-.\.venv\Scripts\python -m specforge project-docs\ -o output\billing           # a folder, scanned recursively
-.\.venv\Scripts\python -m specforge project-docs\ extra.pdf --title "Billing"  # a mix
-.\.venv\Scripts\python -m specforge project-docs\ --check                      # validate and list inputs only, no model calls
-```
-
-| Option | Meaning |
-| --- | --- |
-| `-o, --out DIR` | Output folder (default `output`) |
-| `--title NAME` | Project name for the FRD title |
-| `--prepared-by NAME` | Author shown in Document Information and the revision history (default: SpecForge automated draft) |
-| `--check` | Validate and read every input, print a per-file table, and exit without calling the model |
-| `--dedup content\|path` | `content` (default): files with identical content are processed once. `path`: only the same file reached twice is |
-| `--chunk-words N`, `--chunk-overlap N` | Passage size and overlap in words (defaults 220 and 40) |
-| `--top-k N` | Passages retrieved per search query (default 6) |
-| `--no-dense` | Keyword (BM25) retrieval only; skips the embedding model download |
-| `--no-cache` | Ignore cached model replies |
-
-Every file found gets a record with its relative path (for example `project-docs/specs/api.txt`), type, size and status:
-
-- **processed**: read and indexed. It gets a reference such as `D3` that requirements cite.
-- **skipped**: unsupported type (supported: `.pdf`, `.docx`, `.md`, `.txt`). It is ignored with a warning.
-- **duplicate**: same content as another file, or the same file listed twice.
-- **failed**: could not be used (empty, unreadable, corrupt, password-protected, or a PDF with no text layer). The rest of the files are still processed.
-
-Hidden files and folders (`.git`, `.DS_Store`) and Office lock files (`~$name.docx`) are ignored. A path that does not exist stops the run before anything is processed. The per-file results appear in the CLI output, on the result page, in the FRD's appendices (Appendix B lists files not included) and in `frd.json` under `files`. The run fails only when no file at all can be read.
-
-Run `.\.venv\Scripts\python -m specforge --help` for the full option list.
-
-## How it works
+## 4. System Architecture
 
 ```
 documents ─► chunk ─► hybrid index (BM25 + bge-small embeddings, fused with RRF)
@@ -179,6 +89,190 @@ documents ─► chunk ─► hybrid index (BM25 + bge-small embeddings, fused w
                               │
                 FRD.docx · FRD.md · frd.json · steps/*.json
 ```
+
+How the parts interact:
+
+- **Entry points.** The CLI (`python -m specforge`) and the web server (`python -m specforge.web`) both call the same pipeline, so the same inputs give the same results. The web server queues jobs and runs one at a time.
+- **Ingest and retrieval.** Every input file is validated, deduplicated and split into passages with IDs such as `D2-001`. The passages are indexed for keyword (BM25) and embedding search.
+- **Agents.** Each agent fills a versioned prompt from `prompts/`, sends it through the LLM client and gets back JSON that is validated with Pydantic.
+- **LLM client.** It checks the on-disk cache first, then tries the OpenRouter models in order, then the local Ollama model. It backs off on rate limits and asks the model to repair invalid JSON.
+- **Renderer.** Code, not the model, builds the template: section order, numbering, IDs, tables, priority definitions and traceability status. The same content is written as Word, Markdown, JSON and the web preview.
+
+Techniques used:
+
+- **Understand first, then retrieve.** The Scope Analyst works from the whole document set (or digests of it, when it exceeds `full_context_words`), so the modules reflect the actual system rather than whatever a few searches returned.
+- **Hybrid retrieval.** BM25 catches exact terms (IDs, numbers, jargon) and dense embeddings catch paraphrases; Reciprocal Rank Fusion merges the two rankings.
+- **Agent-generated queries.** Each module's search queries are written by the Scope Analyst in the vocabulary of the documents.
+- **Coverage check.** Any passage that no requirement cites is re-read, so requirements that retrieval missed are recovered.
+- **Grounding and traceability.** Every excerpt carries an ID (such as `D2-001`). Requirements must cite IDs, citations to unknown IDs are removed and flagged, and the FRD ends with a traceability matrix.
+- **Structured outputs.** Each agent returns JSON that is validated with Pydantic. Invalid replies are sent back to the model to repair.
+- **Critique and refine.** The Reviewer flags problems and only the flagged requirements are rewritten. Conflicts between sources become open questions instead of being decided silently.
+- **Deterministic rendering.** The LLM produces content, and code builds the template.
+- **Merged open questions.** Questions raised by any agent are de-duplicated and merged, keeping every related requirement, source and owner.
+- **Resilience on free tiers.** Primary/fallback models with exponential backoff on 429s, plus an on-disk cache of validated replies so an interrupted run resumes without spending requests again.
+
+## 5. Project Structure
+
+```text
+SpecForge/
+├── specforge/
+│   ├── __init__.py          package version
+│   ├── __main__.py          CLI: python -m specforge
+│   ├── web.py               FastAPI server, job queue and downloads: python -m specforge.web
+│   ├── static/index.html    web UI (one file, vanilla JavaScript, no build step)
+│   ├── pipeline.py          runs the ten stages and writes the outputs
+│   ├── ingest.py            input collection, validation, text extraction and chunking
+│   ├── retriever.py         hybrid BM25 + embedding search fused with RRF
+│   ├── agents.py            the ten agents, ID assignment and open-question merging
+│   ├── prompts.py           prompt catalog loader and CLI: python -m specforge.prompts
+│   ├── llm.py               model client: OpenRouter, local Ollama fallback, backoff, JSON repair, cache, cancellation
+│   ├── models.py            Pydantic schemas for the FRD and its parts
+│   ├── render.py            the 21-section template: Word, Markdown and web preview
+│   └── config.py            settings and .env loading
+├── prompts/
+│   ├── runtime/             prompts sent to the model, one folder per prompt, one file per version
+│   └── development/         requests that built the project, versioned the same way
+├── requirements.txt         Python dependencies
+├── .env.example             configuration template (copy to .env)
+├── .gitignore               files excluded from Git
+├── .gitattributes           line-ending and binary-file rules
+├── CHANGELOG.md             release history
+└── README.md                project documentation
+```
+
+Created at run time and git-ignored: `.env`, `.venv/`, `.cache/` (embedding model and cached model replies), `runs/` (web jobs: uploads and results), `output/` (CLI results).
+
+## 6. Prerequisites
+
+- Python 3.11 or newer (the prompt catalog uses the standard-library `tomllib`).
+- pip and `venv` (both included with Python).
+- Git.
+- An OpenRouter API key (free at [openrouter.ai](https://openrouter.ai)), or [Ollama](https://ollama.com/download) with a downloaded model, or both. See [Configuration](#10-configuration).
+- Internet access on the first run to download the embedding model (about 67 MB), unless you use `--no-dense`.
+- Read access to the repository, which is private: ask the maintainer.
+
+## 7. Installation and Setup
+
+### Step 1: Clone the repository
+
+```bash
+git clone https://github.com/Ranjit1407/specforge.git SpecForge
+cd SpecForge
+```
+
+### Step 2: Create and activate a virtual environment
+
+Windows (PowerShell):
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+If PowerShell blocks the activation script, run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once, or call the tools directly as `.\.venv\Scripts\python`.
+
+macOS or Linux:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+The remaining commands assume the virtual environment is active.
+
+### Step 3: Install dependencies
+
+```bash
+pip install -r requirements.txt
+python -m specforge --version
+```
+
+### Step 4: Configure environment variables
+
+Copy the template and edit it:
+
+```powershell
+copy .env.example .env      # Windows
+```
+
+```bash
+cp .env.example .env        # macOS or Linux
+```
+
+Then put your OpenRouter key in `.env` as `OPENROUTER_API_KEY`, or set `OLLAMA_MODEL` to run on a local model. At least one of the two is required; see [Configuration](#10-configuration). Never commit `.env` or paste real keys into code, prompts or issues.
+
+### Step 5: Initialize the database
+
+SpecForge has no database, so there is nothing to initialise. On the first run it downloads the embedding model (about 67 MB) into `.cache/`. Use `--no-dense` to skip it and use keyword search only.
+
+## 8. Running the Project
+
+Web UI:
+
+```bash
+python -m specforge.web               # http://127.0.0.1:8000
+python -m specforge.web --port 8080   # another port
+```
+
+**Local URL:** http://127.0.0.1:8000
+
+The server listens on this computer only. `--host 0.0.0.0` makes it reachable from your network, but it has no login, so use that only on a trusted network.
+
+Command line:
+
+```bash
+python -m specforge project-docs/ -o output/billing --title "Billing"
+```
+
+## 9. Usage
+
+### Web UI
+
+1. Drop in files or whole folders, or use **Select a folder**.
+2. Optionally enter the project name and the author (**Prepared by**).
+3. Click **Generate FRD** and watch each agent's progress live. **Stop** cancels the run; completed steps are kept.
+4. Preview the FRD and download it as Word, Markdown or JSON.
+
+### Command line
+
+SpecForge accepts a single file, several files, a folder, nested subfolders, or any mix of these. The web UI and the CLI feed the same pipeline, so the same inputs give the same results.
+
+```bash
+python -m specforge brd.pdf                                   # one file
+python -m specforge brd.pdf notes.txt minutes.docx            # several files
+python -m specforge project-docs/ -o output/billing           # a folder, scanned recursively
+python -m specforge project-docs/ extra.pdf --title "Billing" # a mix
+python -m specforge project-docs/ --check                     # validate and list inputs only, no model calls
+```
+
+| Option | Meaning |
+| --- | --- |
+| `-o, --out DIR` | Output folder (default `output`) |
+| `--title NAME` | Project name for the FRD title |
+| `--prepared-by NAME` | Author shown in Document Information and the revision history (default: SpecForge automated draft) |
+| `--check` | Validate and read every input, print a per-file table, and exit without calling the model |
+| `--dedup content\|path` | `content` (default): files with identical content are processed once. `path`: only the same file reached twice is |
+| `--chunk-words N`, `--chunk-overlap N` | Passage size and overlap in words (defaults 220 and 40) |
+| `--top-k N` | Passages retrieved per search query (default 6) |
+| `--no-dense` | Keyword (BM25) retrieval only; skips the embedding model download |
+| `--no-cache` | Ignore cached model replies |
+
+Run `python -m specforge --help` for the full option list.
+
+### Inputs
+
+Every file found gets a record with its relative path (for example `project-docs/specs/api.txt`), type, size and status:
+
+- **processed**: read and indexed. It gets a reference such as `D3` that requirements cite.
+- **skipped**: unsupported type (supported: `.pdf`, `.docx`, `.md`, `.txt`). It is ignored with a warning.
+- **duplicate**: same content as another file, or the same file listed twice.
+- **failed**: could not be used (empty, unreadable, corrupt, password-protected, or a PDF with no text layer). The rest of the files are still processed.
+
+Hidden files and folders (`.git`, `.DS_Store`) and Office lock files (`~$name.docx`) are ignored. A path that does not exist stops the run before anything is processed. The per-file results appear in the CLI output, on the result page, in the FRD's appendices (Appendix B lists files not included) and in `frd.json` under `files`. The run fails only when no file at all can be read.
+
+### Outputs
+
+Each run writes `FRD.docx`, `FRD.md`, `frd.json` and `preview.html`, plus `steps/*.json` with every stage's intermediate result, to the output folder (`output/` for the CLI, `runs/<job-id>/output/` for the web UI).
 
 ### The FRD template
 
@@ -210,50 +304,231 @@ Every FRD follows the same 21 sections:
 
 Two appendices follow: the source documents that the references point to, and any input files that were not used. The web preview shows the same document as the Word file.
 
-Techniques used:
+## 10. Configuration
 
-- **Understand first, then retrieve.** The Scope Analyst works from the whole document set (or digests of it, when it exceeds `full_context_words`), so the modules reflect the actual system rather than whatever a few searches returned.
-- **Hybrid retrieval.** BM25 catches exact terms (IDs, numbers, jargon) and dense embeddings catch paraphrases; Reciprocal Rank Fusion merges the two rankings.
-- **Agent-generated queries.** Each module's search queries are written by the Scope Analyst in the vocabulary of the documents.
-- **Coverage check.** Any passage that no requirement cites is re-read, so requirements that retrieval missed are recovered.
-- **Grounding and traceability.** Every excerpt carries an ID (such as `D2-001`). Requirements must cite IDs, citations to unknown IDs are removed and flagged, and the FRD ends with a traceability matrix.
-- **Structured outputs.** Each agent returns JSON that is validated with Pydantic. Invalid replies are sent back to the model to repair.
-- **Critique and refine.** The Reviewer flags problems and only the flagged requirements are rewritten. Conflicts between sources become open questions instead of being decided silently.
-- **Deterministic rendering.** The LLM produces content, and code builds the template: section order, numbering, IDs, tables, priority definitions and traceability status.
-- **Merged open questions.** Questions raised by any agent are de-duplicated and merged, keeping every related requirement, source and owner.
-- **Resilience on free tiers.** Primary/fallback models with exponential backoff on 429s, plus an on-disk cache of validated replies so an interrupted run resumes without spending requests again.
+Settings are read from `.env` in the project root. `.env` is git-ignored; `.env.example` is the committed template.
 
-## Project structure
+**Required:** a run needs `OPENROUTER_API_KEY`, `OLLAMA_MODEL`, or both. Without either, it stops with "OPENROUTER_API_KEY is not set" before any model call. Every other variable has a working default, and `--check` needs no configuration because it makes no model calls.
 
-```
-SpecForge/
-├── specforge/
-│   ├── __init__.py          package version
-│   ├── __main__.py          CLI: python -m specforge
-│   ├── web.py               FastAPI server, job queue and downloads: python -m specforge.web
-│   ├── static/index.html    web UI (one file, vanilla JavaScript, no build step)
-│   ├── pipeline.py          runs the ten stages and writes the outputs
-│   ├── ingest.py            input collection, validation, text extraction and chunking
-│   ├── retriever.py         hybrid BM25 + embedding search fused with RRF
-│   ├── agents.py            the ten agents, ID assignment and open-question merging
-│   ├── prompts.py           prompt catalog loader and CLI: python -m specforge.prompts
-│   ├── llm.py               model client: OpenRouter, local Ollama fallback, backoff, JSON repair, cache, cancellation
-│   ├── models.py            Pydantic schemas for the FRD and its parts
-│   ├── render.py            the 21-section template: Word, Markdown and web preview
-│   └── config.py            settings and .env loading
-├── prompts/
-│   ├── runtime/             prompts sent to the model, one folder per prompt, one file per version
-│   └── development/         requests that built the project, versioned the same way
-├── requirements.txt
-├── .env.example             configuration template (copy to .env)
-├── .gitignore, .gitattributes
-├── CHANGELOG.md
-└── README.md
+| Variable | Description | Required |
+|---|---|---|
+| `OPENROUTER_API_KEY` | Your OpenRouter API key | Yes, unless `OLLAMA_MODEL` is set |
+| `OLLAMA_MODEL` | Comma-separated local Ollama models, used when every OpenRouter model fails, or as the only backend when there is no OpenRouter key (for example `qwen2.5:7b`) | Yes, unless `OPENROUTER_API_KEY` is set |
+| `PRIMARY_MODEL` | OpenRouter model ID tried first (default `google/gemma-4-31b-it:free`) | No |
+| `FALLBACK_MODEL` | Comma-separated OpenRouter model IDs tried in order when the primary fails or is rate-limited | No |
+| `OLLAMA_URL` | Ollama server address (default `http://localhost:11434`) | No |
+| `OLLAMA_NUM_CTX` | Largest context window SpecForge asks Ollama for, in tokens (default `32768`) | No |
+
+Example (placeholder key):
+
+```ini
+OPENROUTER_API_KEY=sk-or-v1-...
+PRIMARY_MODEL=nvidia/nemotron-3-super-120b-a12b:free
+FALLBACK_MODEL=google/gemma-4-31b-it:free,nvidia/nemotron-3-ultra-550b-a55b:free
+OLLAMA_MODEL=qwen2.5:7b
 ```
 
-Created at run time and git-ignored: `.env`, `.venv/`, `.cache/` (embedding model and cached model replies), `runs/` (web jobs: uploads and results), `output/` (CLI results).
+Pipeline defaults (passage size, retrieval depth, context budget, retries, cache) are in [specforge/config.py](specforge/config.py), and the most useful ones can be overridden per run with CLI options.
 
-## Prompt management
+Free models come and go on OpenRouter. If a model starts failing with "unavailable for free" (HTTP 404), replace it in `.env`; https://openrouter.ai/models?max_price=0 lists the current free models.
+
+### Local fallback with Ollama
+
+SpecForge can fall back to a model running on your own computer through [Ollama](https://ollama.com):
+
+1. Install Ollama and pull a model that is good at following instructions and writing JSON. `qwen2.5:7b` (about 4.7 GB) runs well on a laptop GPU with 6 GB of memory:
+   ```bash
+   ollama pull qwen2.5:7b
+   ```
+2. Add `OLLAMA_MODEL=qwen2.5:7b` to `.env`, and keep Ollama running (it starts with Windows by default).
+
+How the fallback works:
+
+- Every request tries the OpenRouter models first. If all of them fail in a round (rate-limited, unavailable or erroring), the same request goes straight to the local model instead of waiting through the back-off.
+- When OpenRouter reports that the daily free-model limit or the credit balance is used up, or rejects the API key, the rest of the run uses the local model directly.
+- With no `OPENROUTER_API_KEY` at all, every request goes to Ollama.
+- Local replies use Ollama's JSON mode and a context window sized to each prompt, up to `OLLAMA_NUM_CTX`. A prompt too large for that window is not sent, because Ollama would silently cut off its beginning (the instructions). That can happen with very large document sets; raise `OLLAMA_NUM_CTX` if the model and your memory allow it.
+- The Stop button also stops a local generation, so a stopped run does not keep the model busy.
+- The log and the run summary name the model that answered each request, for example `ollama:qwen2.5:7b answered in 40s`.
+
+A 7B local model is slower and less thorough than the large hosted models. Expect a full run to take longer, and review its output with that in mind.
+
+### When Ollama is not found
+
+If `OLLAMA_MODEL` is set but Ollama is not installed or not running, the log shows `Ollama is not reachable at http://localhost:11434 (...); is it running?` and the local fallback is skipped. If Ollama is running but the model has not been downloaded, the log shows an HTTP 404 with ``run `ollama pull <model>` ``. To install and set it up:
+
+1. Download Ollama from [ollama.com/download](https://ollama.com/download):
+   - **Windows:** run the installer from [ollama.com/download/windows](https://ollama.com/download/windows). Ollama then runs in the background and starts with Windows.
+   - **macOS:** download the app from [ollama.com/download/mac](https://ollama.com/download/mac), move it to Applications and open it.
+   - **Linux:** run `curl -fsSL https://ollama.com/install.sh | sh`.
+2. Check the installation: `ollama --version`.
+3. Download a model: `ollama pull qwen2.5:7b`. Other models are listed at [ollama.com/library](https://ollama.com/library).
+4. Confirm the model is there: `ollama list`.
+5. Confirm the server is running: open http://localhost:11434 in a browser, which should say "Ollama is running". If it does not, start it with `ollama serve` or open the Ollama app.
+6. Add `OLLAMA_MODEL=qwen2.5:7b` to `.env`. Set `OLLAMA_URL` only if Ollama runs on another host or port.
+7. Run SpecForge again. The log names the local model when it answers.
+
+## 11. API Documentation
+
+The web server's API is used by the web UI and can be called directly. It has no authentication, so keep the server on `127.0.0.1` or a trusted network. FastAPI also serves interactive documentation at http://127.0.0.1:8000/docs while the server runs.
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/config` | Accepted file types, upload limits and the ten stage names |
+| POST | `/api/jobs` | Upload files and queue a job; returns `201 {"id": "<job id>"}` |
+| GET | `/api/jobs/{job_id}` | Job status; when done, also the FRD JSON and the HTML preview |
+| GET | `/api/jobs/{job_id}/events` | Server-Sent Events stream of status and log events |
+| POST | `/api/jobs/{job_id}/cancel` | Stop a queued or running job |
+| GET | `/api/jobs/{job_id}/download/{fmt}` | Download the FRD as `docx`, `md` or `json` |
+
+- **POST `/api/jobs`** takes `multipart/form-data`: `files` (one or more), `paths` (optional, one relative path per file in the same order, for folder uploads), and optional `title` and `prepared_by` (up to 120 characters). Limits: 200 files, 25 MB per file and 200 MB in total. Errors: `400` too many files, mismatched paths or no usable files; `413` a file or the upload is too large.
+- **GET `/api/jobs/{job_id}`** returns `id`, `title`, `files`, `status` (`queued`, `running`, `done`, `error` or `cancelled`), `stage`, `error` and `created`, plus `frd` and `preview` when the job is done. `404` means the job is unknown, for example after a server restart.
+- **GET `/api/jobs/{job_id}/events`** sends events of type `status` or `log`, each with an `id`; a reconnect with `Last-Event-ID` resumes where it left off.
+- **GET `/api/jobs/{job_id}/download/{fmt}`** returns `409` while the FRD is not ready.
+
+Jobs run one at a time, because free-tier models are rate-limited per account. The job list is kept in memory and resets when the server restarts; uploaded files and results stay under `runs/<job-id>/`.
+
+## 12. Testing
+
+There is no automated test suite yet. Run these checks before committing:
+
+```bash
+python -m specforge.prompts check                      # prompt files, versions, secrets and README sync
+python -m specforge <folder-with-test-documents> --check   # input collection and text extraction, no model calls
+python -m specforge <small-document-set> -o output/test    # full run through every agent
+```
+
+- The full run uses free-tier requests. Replies are cached, so rerunning the same input is fast and free.
+- For web UI changes, run `python -m specforge.web` and try the whole flow in a browser: upload, progress, Stop, result and downloads, in light and dark mode and on a narrow window.
+
+## 13. Screenshots and Demo
+
+No screenshots or demo recording have been added yet. To see SpecForge working, run `python -m specforge.web` and open http://127.0.0.1:8000. The web UI has three views:
+
+- **Upload**: drop zone and folder picker, the file list, project name and **Prepared by** fields.
+- **Progress**: the ten stages, the current step, elapsed time and the **Stop** button.
+- **Result**: counts of requirements, access requirements, use cases and open questions, the rendered FRD with a contents sidebar, and Word, Markdown and JSON downloads.
+
+## 14. Security
+
+- Never commit API keys, credentials, private certificates or `.env` files. `.gitignore` excludes `.env` and every `.env.*` except `.env.example`, plus key and credential files.
+- Store secrets in `.env` (or your system's secrets manager), never in code, prompts or committed files. `python -m specforge.prompts check` fails if a prompt file contains something that looks like an API key.
+- If a secret is ever committed, revoke and rotate it at the provider first. Removing it from history does not recall copies that were already pushed or cloned.
+- The web server has no login. It listens on `127.0.0.1` by default; use `--host 0.0.0.0` only on a trusted network.
+- With OpenRouter, document passages are sent to the provider of the model in use, and free-model providers may log prompts. For confidential documents, run on Ollama only (no `OPENROUTER_API_KEY`) so nothing leaves your computer.
+- Uploads, outputs and cached replies are stored unencrypted under `runs/`, `output/` and `.cache/`. Delete them when a project ends.
+- Report security vulnerabilities privately to the maintainer, [@Ranjit1407](https://github.com/Ranjit1407), rather than in a public post.
+- Review third-party dependencies and their licenses before adding them to `requirements.txt`.
+
+## 15. Known Limitations
+
+- OpenRouter free models allow 50 requests per day (1,000 per day once the account has $10 of credit). A typical run makes roughly `modules + 8` calls, about 12 to 20. When every model is rate-limited, the client uses the local Ollama model if one is configured, and otherwise backs off before giving up; retrying resumes from cached steps.
+- Free OpenRouter models are withdrawn without notice and then fail with HTTP 404; replace them in `.env`.
+- The web server keeps jobs in memory, so the job list resets on restart (results stay under `runs/`).
+- The web UI has no authentication and runs one job at a time.
+- Scanned PDFs without a text layer cannot be read; OCR them first.
+- Only `.pdf`, `.docx`, `.md` and `.txt` inputs are supported.
+- The embedding model and stop-word list are English, so retrieval works best on English documents.
+- Very large document sets can exceed the Ollama context window; those prompts are not sent to the local model.
+- A 7B local model is slower and less thorough than the hosted models.
+
+## 16. Future Enhancements
+
+Proposed, not yet scheduled:
+
+- An automated test suite: unit tests for ingest, retrieval, ID assignment and open-question merging, and integration tests on recorded model replies.
+- Authentication for the web UI, so it can be shared on a network.
+- A persistent job store, so jobs survive a server restart.
+- OCR for scanned PDFs.
+- More input formats, such as `.xlsx`, `.pptx`, `.html` and `.eml`.
+- Automatic clean-up of old `runs/` and `.cache/` data.
+- Support for non-English source documents.
+
+## 17. Contributing
+
+### Reporting bugs and proposing features
+
+Open an issue on the repository. For a bug, include the command or the web steps, the console log and the output of `python -m specforge --version`. For a feature, describe the problem it solves and an example input.
+
+### Repository and branches
+
+The code is hosted at https://github.com/Ranjit1407/specforge (a private repository: ask the owner for access). After cloning, `origin` already points at GitHub.
+
+- `main` is always runnable. Releases are tagged on it (`v1.0.0` to `v2.1.0`, listed in [CHANGELOG.md](CHANGELOG.md)).
+- Do work on short-lived branches: `feature/<topic>`, `fix/<topic>`, `docs/<topic>`, or `prompt/<prompt-id>-v<version>` for prompt changes.
+- Merge back with a pull request, or locally with `git merge --no-ff <branch>`, after the checks in [Testing](#12-testing) pass.
+
+### Coding standards
+
+- Python 3.11+ with type hints and the standard library first.
+- Do not add a dependency without a clear need. When you do, add it to `requirements.txt` with a minimum version.
+- Prompt text belongs only in `prompts/`. Code refers to prompts by id.
+- Settings belong in `config.py` or `.env`. Credentials are never hardcoded.
+- Messages shown to users are plain language, without stack traces, model names or raw API errors.
+- The web UI stays a single static file with no build step. Keep dark mode and the narrow-screen layout working.
+
+### Submitting a change
+
+1. Set up the environment as in [Installation and Setup](#7-installation-and-setup) and create a branch.
+2. Make the change and run the checks in [Testing](#12-testing).
+3. Update the documentation in the same change: this README, `CHANGELOG.md` for user-visible changes, and `sync-readme` for prompt changes.
+4. Commit following the rules below and open a pull request that describes the change, how you checked it, and any prompt versions it introduces.
+
+### Commit messages
+
+- Make one logical change per commit, so it can be reviewed and reverted on its own.
+- Subject: an imperative summary of up to about 72 characters, for example `Accept files, folders and nested folders with per-file tracking`.
+- Body: what changed and why, wrapped at about 72 characters.
+- Prompt changes: start the subject with `prompt(<id>): v<version>`, for example `prompt(reviewer): v1.1.0 flag unmeasurable performance terms`, and commit the new prompt file together with the regenerated README.
+- Releases: `Release X.Y.Z`.
+
+### What is never committed
+
+`.gitignore` excludes secrets (`.env` and every `.env.*` except `.env.example`, key and credential files), the virtual environment, Python caches, run-time data (`.cache/`, `runs/`, `output/`, logs) and editor or OS files. `.gitattributes` stores text with LF line endings and treats Word and PDF files as binary.
+
+- Check that a file is ignored: `git check-ignore -v .env`
+- Review what you are about to commit: `git status` and `git diff --staged`
+
+### Versioning and releases
+
+The application follows semantic versioning (MAJOR.MINOR.PATCH). The version lives in [specforge/__init__.py](specforge/__init__.py) and is shown by `python -m specforge --version`.
+
+- **MAJOR**: incompatible changes to CLI options, web API endpoints, the `frd.json` structure or configuration variables.
+- **MINOR**: new, backward-compatible functionality.
+- **PATCH**: backward-compatible bug fixes.
+
+Prompts have their own versions, described in [Changing a prompt](#changing-a-prompt).
+
+To make a release:
+
+```bash
+# 1. update __version__ in specforge/__init__.py and add a section to CHANGELOG.md
+git add specforge/__init__.py CHANGELOG.md
+git commit -m "Release 2.2.0"
+git tag -a v2.2.0 -m "SpecForge 2.2.0: <one-line summary>"
+git push origin main --tags
+```
+
+### Common Git commands
+
+| Task | Command |
+| --- | --- |
+| See what changed | `git status`, `git diff`, `git diff --staged` |
+| Stage and commit | `git add <files>`, then `git commit` |
+| History | `git log --oneline --decorate --graph` |
+| History of one prompt | `git log --oneline -- prompts/runtime/reviewer/` |
+| Start a branch | `git switch -c feature/<topic>` |
+| Switch branch | `git switch main` |
+| Merge a branch | `git switch main`, then `git merge --no-ff feature/<topic>` |
+| Update from the remote | `git pull --rebase` |
+| Publish a branch | `git push -u origin feature/<topic>` |
+| Publish main and tags | `git push`, then `git push origin --tags` |
+| List and inspect releases | `git tag -n`, `git show v2.1.0` |
+| Compare two releases | `git diff v2.0.0 v2.1.0 --stat` |
+| Undo a commit safely | `git revert <commit>` (adds a new commit; history is kept) |
+| Set work aside | `git stash -u`, later `git stash pop` |
+
+### Prompt management
 
 Every prompt SpecForge sends to a model is a versioned file under `prompts/`, not a string inside the code. The requests used to build the project are stored the same way, so the whole prompt history can be searched, reviewed, reused and tracked in Git.
 
@@ -281,20 +556,20 @@ Each file holds one version of one prompt:
 
 The code asks for prompts by id, for example `prompts.render("scope_analyst", ...)` or `prompts.text("grounding")`, and [specforge/prompts.py](specforge/prompts.py) loads the highest version. Shared instructions such as the grounding rule are fragments, so each instruction is stored once.
 
-### Prompt commands
+#### Prompt commands
 
-```powershell
-.\.venv\Scripts\python -m specforge.prompts list                      # current version of every prompt
-.\.venv\Scripts\python -m specforge.prompts list --category development
-.\.venv\Scripts\python -m specforge.prompts show scope_analyst         # text and metadata (--version X for an older one)
-.\.venv\Scripts\python -m specforge.prompts history scope_analyst      # every version with its change notes
-.\.venv\Scripts\python -m specforge.prompts search acceptance criteria # all versions containing these words
-.\.venv\Scripts\python -m specforge.prompts bump scope_analyst         # copy the current version to the next one
-.\.venv\Scripts\python -m specforge.prompts check                      # validate files, versions, secrets, README sync
-.\.venv\Scripts\python -m specforge.prompts sync-readme                # regenerate the catalog below
+```bash
+python -m specforge.prompts list                      # current version of every prompt
+python -m specforge.prompts list --category development
+python -m specforge.prompts show scope_analyst         # text and metadata (--version X for an older one)
+python -m specforge.prompts history scope_analyst      # every version with its change notes
+python -m specforge.prompts search acceptance criteria # all versions containing these words
+python -m specforge.prompts bump scope_analyst         # copy the current version to the next one
+python -m specforge.prompts check                      # validate files, versions, secrets, README sync
+python -m specforge.prompts sync-readme                # regenerate the catalog below
 ```
 
-### Changing a prompt
+#### Changing a prompt
 
 1. Create the next version: `python -m specforge.prompts bump <id> --part minor`. The current file is never edited; it stays as history.
 2. Edit the new file's `template`, and replace the `changes` placeholder with what changed and why.
@@ -754,22 +1029,22 @@ Requests that shaped the current codebase, in order; requests that were later re
 
 | Prompt | Versions | Status | Date | Request | Outcome |
 | --- | --- | --- | --- | --- | --- |
-| `dev-01-rag-agent-chain-design` | [1.0.0](prompts/development/dev-01-rag-agent-chain-design/1.0.0.toml), [1.1.0](prompts/development/dev-01-rag-agent-chain-design/1.1.0.toml) | answered | 2026-10-01 | Design a RAG agent chain that generates an FRD | Recommended a hybrid-retrieval, multi-agent design with grounding, citations, schema-validated outputs and a review step; this became SpecForge's architecture. |
-| `dev-02-build-on-free-models` | [1.0.0](prompts/development/dev-02-build-on-free-models/1.0.0.toml), [1.1.0](prompts/development/dev-02-build-on-free-models/1.1.0.toml) | implemented | 2026-10-01 | Build the project on free OpenRouter models | The SpecForge package: ingestion, hybrid retriever, seven-agent pipeline, OpenRouter client with fallback, backoff and caching, CLI, and Word/Markdown/JSON export. |
-| `dev-03-upload-frontend` | [1.0.0](prompts/development/dev-03-upload-frontend/1.0.0.toml), [1.1.0](prompts/development/dev-03-upload-frontend/1.1.0.toml) | implemented | 2026-10-01 | Add a web frontend for uploading documents | Upload page served by FastAPI, with live progress and FRD preview and download. |
-| `dev-04-domain-agnostic` | [1.0.0](prompts/development/dev-04-domain-agnostic/1.0.0.toml), [1.1.0](prompts/development/dev-04-domain-agnostic/1.1.0.toml) | implemented | 2026-10-01 | Make generation domain-agnostic | Modules, roles and search queries are derived from the documents by the Scope Analyst; domain-specific assumptions were removed and the Document Reader and Coverage Sweep agents were added. |
-| `dev-05-web-hosting` | [1.0.0](prompts/development/dev-05-web-hosting/1.0.0.toml), [1.1.0](prompts/development/dev-05-web-hosting/1.1.0.toml) | implemented | 2026-10-01 | Host the application as a local web server | `python -m specforge.web` serves the UI and API at http://127.0.0.1:8000 with a background job queue and progress streaming. |
+| `dev-01-rag-agent-chain-design` | [1.0.0](prompts/development/dev-01-rag-agent-chain-design/1.0.0.toml), [1.1.0](prompts/development/dev-01-rag-agent-chain-design/1.1.0.toml), [1.2.0](prompts/development/dev-01-rag-agent-chain-design/1.2.0.toml) | answered | 2026-10-01 | Design a RAG agent chain that generates an FRD | Recommended a hybrid-retrieval, multi-agent design with grounding, citations, schema-validated outputs and a review step; this became SpecForge's architecture. |
+| `dev-02-build-on-free-models` | [1.0.0](prompts/development/dev-02-build-on-free-models/1.0.0.toml), [1.1.0](prompts/development/dev-02-build-on-free-models/1.1.0.toml), [1.2.0](prompts/development/dev-02-build-on-free-models/1.2.0.toml) | implemented | 2026-10-01 | Build the project on free OpenRouter models | The SpecForge package: ingestion, hybrid retriever, seven-agent pipeline, OpenRouter client with fallback, backoff and caching, CLI, and Word/Markdown/JSON export. |
+| `dev-03-upload-frontend` | [1.0.0](prompts/development/dev-03-upload-frontend/1.0.0.toml), [1.1.0](prompts/development/dev-03-upload-frontend/1.1.0.toml), [1.2.0](prompts/development/dev-03-upload-frontend/1.2.0.toml) | implemented | 2026-10-01 | Add a web frontend for uploading documents | Upload page served by FastAPI, with live progress and FRD preview and download. |
+| `dev-04-domain-agnostic` | [1.0.0](prompts/development/dev-04-domain-agnostic/1.0.0.toml), [1.1.0](prompts/development/dev-04-domain-agnostic/1.1.0.toml), [1.2.0](prompts/development/dev-04-domain-agnostic/1.2.0.toml) | implemented | 2026-10-01 | Make generation domain-agnostic | Modules, roles and search queries are derived from the documents by the Scope Analyst; domain-specific assumptions were removed and the Document Reader and Coverage Sweep agents were added. |
+| `dev-05-web-hosting` | [1.0.0](prompts/development/dev-05-web-hosting/1.0.0.toml), [1.1.0](prompts/development/dev-05-web-hosting/1.1.0.toml), [1.2.0](prompts/development/dev-05-web-hosting/1.2.0.toml) | implemented | 2026-10-01 | Host the application as a local web server | `python -m specforge.web` serves the UI and API at http://127.0.0.1:8000 with a background job queue and progress streaming. |
 | `dev-06-bug-fixes-corporate-ui` | [1.0.0](prompts/development/dev-06-bug-fixes-corporate-ui/1.0.0.toml), [1.1.0](prompts/development/dev-06-bug-fixes-corporate-ui/1.1.0.toml) | implemented | 2026-10-01 | Fix bugs and restyle the frontend in a corporate style | Fixes to logging, error messages, cache paths, module de-duplication and exports; a navy and slate UI with a three-step flow, stage descriptions, summary figures and dark mode. |
 | `dev-07-repository-cleanup` | [1.0.0](prompts/development/dev-07-repository-cleanup/1.0.0.toml), [1.1.0](prompts/development/dev-07-repository-cleanup/1.1.0.toml), [1.2.0](prompts/development/dev-07-repository-cleanup/1.2.0.toml) | implemented | 2026-10-01 | Remove unused code and files | Two cleanup passes: the first removed dead code, caches, test runs and stale outputs; the second removed an unused prompt field, an unused CSS variable, redundant .gitattributes rules, duplicated README text, local reply and embedding caches and test output. |
 | `dev-08-model-and-key-update` | [1.0.0](prompts/development/dev-08-model-and-key-update/1.0.0.toml), [1.1.0](prompts/development/dev-08-model-and-key-update/1.1.0.toml) | implemented | 2026-10-01 | Switch the API key and use Qwen as the primary model | Key stored in .env; Qwen primary with Gemma 4 31B and NVIDIA Nemotron fallbacks; FALLBACK_MODEL accepts a comma-separated list. |
-| `dev-09-stop-button` | [1.0.0](prompts/development/dev-09-stop-button/1.0.0.toml), [1.1.0](prompts/development/dev-09-stop-button/1.1.0.toml) | implemented | 2026-10-01 | Add a Stop button for long-running jobs | A Stop button appears after 30 seconds, with confirmation; cancelling interrupts in-flight requests and retry waits, and completed steps stay cached for the next run. |
+| `dev-09-stop-button` | [1.0.0](prompts/development/dev-09-stop-button/1.0.0.toml), [1.1.0](prompts/development/dev-09-stop-button/1.1.0.toml), [1.2.0](prompts/development/dev-09-stop-button/1.2.0.toml) | implemented | 2026-10-01 | Add a Stop button for long-running jobs | A Stop button appears after 30 seconds, with confirmation; cancelling interrupts in-flight requests and retry waits, and completed steps stay cached for the next run. |
 | `dev-10-remove-samples` | [1.0.0](prompts/development/dev-10-remove-samples/1.0.0.toml), [1.1.0](prompts/development/dev-10-remove-samples/1.1.0.toml) | implemented | 2026-10-07 | Remove the bundled sample documents | The samples/ folder was deleted and the README line that referred to it was removed. |
-| `dev-11-input-sources` | [1.0.0](prompts/development/dev-11-input-sources/1.0.0.toml) | implemented | 2026-10-08 | Support file, folder and CLI inputs with per-file tracking | Release 1.1.0: a shared input collection, validation before processing, content or path deduplication, per-file status reporting, folder upload and the --check option. |
+| `dev-11-input-sources` | [1.0.0](prompts/development/dev-11-input-sources/1.0.0.toml), [1.1.0](prompts/development/dev-11-input-sources/1.1.0.toml) | implemented | 2026-10-08 | Support file, folder and CLI inputs with per-file tracking | Release 1.1.0: a shared input collection, validation before processing, content or path deduplication, per-file status reporting, folder upload and the --check option. |
 | `dev-12-git-and-prompt-management` | [1.0.0](prompts/development/dev-12-git-and-prompt-management/1.0.0.toml) | implemented | 2026-10-08 | Add Git version control and prompt management | Release 1.2.0: tagged Git history, a hardened .gitignore, the versioned prompt catalog with its CLI, this development prompt history, the README overhaul and a CHANGELOG. |
 | `dev-13-publish-to-github` | [1.0.0](prompts/development/dev-13-publish-to-github/1.0.0.toml), [1.1.0](prompts/development/dev-13-publish-to-github/1.1.0.toml) | implemented | 2026-10-08 | Publish the project to GitHub | Private repository github.com/Ranjit1407/specforge created; main and tags v1.0.0 to v1.2.0 pushed, and later commits pushed the same way. |
 | `dev-14-prompt-history-update` | [1.0.0](prompts/development/dev-14-prompt-history-update/1.0.0.toml), [1.1.0](prompts/development/dev-14-prompt-history-update/1.1.0.toml) | implemented | 2026-10-08 | Update the development prompt history | The reverted Hugging Face (Kimi-K3) request and the request that reverted it were removed and the history renumbered; the GitHub publishing request and the second cleanup request were added. |
-| `dev-15-frd-template` | [1.0.0](prompts/development/dev-15-frd-template/1.0.0.toml) | implemented | 2026-10-08 | Generate FRDs in the 21-section enterprise template | Release 2.0.0: the 21-section template, Specification Analyst, Access Analyst and Use Case Writer agents, template-scale priorities, FR/RBAR/UC/AS/DEP/NFR/OQ identifiers, merged open questions, traceability status and a server-rendered preview. |
-| `dev-16-ollama-fallback` | [1.0.0](prompts/development/dev-16-ollama-fallback/1.0.0.toml), [1.1.0](prompts/development/dev-16-ollama-fallback/1.1.0.toml) | implemented | 2026-10-08 | Add a local Ollama fallback | Release 2.1.0: Ollama fallback after a failed round of OpenRouter models, a permanent switch when the quota is exhausted, Ollama-only mode, JSON mode, per-prompt context sizing and cancellable streaming. |
+| `dev-15-frd-template` | [1.0.0](prompts/development/dev-15-frd-template/1.0.0.toml), [1.1.0](prompts/development/dev-15-frd-template/1.1.0.toml) | implemented | 2026-10-08 | Generate FRDs in the 21-section enterprise template | Release 2.0.0: the 21-section template, Specification Analyst, Access Analyst and Use Case Writer agents, template-scale priorities, FR/RBAR/UC/AS/DEP/NFR/OQ identifiers, merged open questions, traceability status and a server-rendered preview. |
+| `dev-16-ollama-fallback` | [1.0.0](prompts/development/dev-16-ollama-fallback/1.0.0.toml), [1.1.0](prompts/development/dev-16-ollama-fallback/1.1.0.toml), [1.2.0](prompts/development/dev-16-ollama-fallback/1.2.0.toml) | implemented | 2026-10-08 | Add a local Ollama fallback | Release 2.1.0: Ollama fallback after a failed round of OpenRouter models, a permanent switch when the quota is exhausted, Ollama-only mode, JSON mode, per-prompt context sizing and cancellable streaming. |
 
 #### Prompt version history
 
@@ -800,14 +1075,19 @@ Every version of every prompt, newest first. Each version links to its file.
 | `priority_rules` | [1.0.0](prompts/runtime/priority_rules/1.0.0.toml) | 2026-10-08 | Initial version: the template's priority scale, stored once and shared by every agent that assigns priorities (FRD template (dev-15)). |
 | `requirement_fields` | [2.0.0](prompts/runtime/requirement_fields/2.0.0.toml) | 2026-10-08 | MAJOR: priority moves to the template scale with a priority_basis field (rules in the priority_rules fragment); descriptions must be unambiguous and business-focused; acceptance criteria must be measurable and observable (FRD template (dev-15)). |
 | `requirement_fields` | [1.0.0](prompts/runtime/requirement_fields/1.0.0.toml) | 2026-10-01 | Initial version, moved unchanged from the source code into the prompt catalog. |
+| `dev-01-rag-agent-chain-design` | [1.2.0](prompts/development/dev-01-rag-agent-chain-design/1.2.0.toml) | 2026-10-09 | Tightened the 1.1.0 rewrite: labelled the four deliverables (architecture, retrieval, accuracy techniques, tooling) and made the FRD contents an explicit requirement. |
 | `dev-01-rag-agent-chain-design` | [1.1.0](prompts/development/dev-01-rag-agent-chain-design/1.1.0.toml) | 2026-10-08 | Rewritten as a professional prompt with the same intent: names the deliverables (architecture, retrieval approach, accuracy techniques, tool choices) and what the FRD must contain. |
 | `dev-01-rag-agent-chain-design` | [1.0.0](prompts/development/dev-01-rag-agent-chain-design/1.0.0.toml) | 2026-10-01 | Original request as written. |
+| `dev-02-build-on-free-models` | [1.2.0](prompts/development/dev-02-build-on-free-models/1.2.0.toml) | 2026-10-09 | Made the prompt self-contained (no reference to dev-01) and listed the deliverables separately, adding schema validation of every model reply. |
 | `dev-02-build-on-free-models` | [1.1.0](prompts/development/dev-02-build-on-free-models/1.1.0.toml) | 2026-10-08 | Rewritten professionally with the same intent: names the models by ID, keeps the key in .env instead of the prompt, and lists the deliverables and the handling of free-tier rate limits. |
 | `dev-02-build-on-free-models` | [1.0.0](prompts/development/dev-02-build-on-free-models/1.0.0.toml) | 2026-10-01 | Original request as written; the API key it contained is redacted. |
+| `dev-03-upload-frontend` | [1.2.0](prompts/development/dev-03-upload-frontend/1.2.0.toml) | 2026-10-09 | Light edit of the 1.1.0 rewrite: says the progress is live and tightens the wording. |
 | `dev-03-upload-frontend` | [1.1.0](prompts/development/dev-03-upload-frontend/1.1.0.toml) | 2026-10-08 | Rewritten professionally with the same intent: specifies validation, progress, results, downloads and error handling, and reuse of the existing pipeline. |
 | `dev-03-upload-frontend` | [1.0.0](prompts/development/dev-03-upload-frontend/1.0.0.toml) | 2026-10-01 | Original request as written. |
+| `dev-04-domain-agnostic` | [1.2.0](prompts/development/dev-04-domain-agnostic/1.2.0.toml) | 2026-10-09 | Tightened the wording and turned the closing check into an explicit acceptance criterion: a coherent FRD for two unrelated domains without code changes. |
 | `dev-04-domain-agnostic` | [1.1.0](prompts/development/dev-04-domain-agnostic/1.1.0.toml) | 2026-10-08 | Rewritten professionally with the same intent: states what must be derived from the documents, what must be removed, and how to verify it. |
 | `dev-04-domain-agnostic` | [1.0.0](prompts/development/dev-04-domain-agnostic/1.0.0.toml) | 2026-10-01 | Original request as written. |
+| `dev-05-web-hosting` | [1.2.0](prompts/development/dev-05-web-hosting/1.2.0.toml) | 2026-10-09 | Light edit of the 1.1.0 rewrite: tightened the wording and asks for the local URL to be documented. |
 | `dev-05-web-hosting` | [1.1.0](prompts/development/dev-05-web-hosting/1.1.0.toml) | 2026-10-08 | Rewritten professionally with the same intent: defines the single start command, background jobs, progress streaming, per-job storage and documentation. |
 | `dev-05-web-hosting` | [1.0.0](prompts/development/dev-05-web-hosting/1.0.0.toml) | 2026-10-01 | Original request as written. |
 | `dev-06-bug-fixes-corporate-ui` | [1.1.0](prompts/development/dev-06-bug-fixes-corporate-ui/1.1.0.toml) | 2026-10-08 | Rewritten professionally with the same intent: lists what the bug review covers and the concrete goals of the redesign. |
@@ -817,114 +1097,32 @@ Every version of every prompt, newest first. Each version links to its file.
 | `dev-07-repository-cleanup` | [1.0.0](prompts/development/dev-07-repository-cleanup/1.0.0.toml) | 2026-10-01 | Original request as written. It was repeated on 2026-10-07 as "remove unwanted files and unused files"; stored once to avoid a duplicate. |
 | `dev-08-model-and-key-update` | [1.1.0](prompts/development/dev-08-model-and-key-update/1.1.0.toml) | 2026-10-08 | Rewritten professionally with the same intent: keeps the key out of the prompt and code, and asks for a cross-provider fallback chain and a live test. |
 | `dev-08-model-and-key-update` | [1.0.0](prompts/development/dev-08-model-and-key-update/1.0.0.toml) | 2026-10-01 | Original request as written; the API key it contained is redacted. |
+| `dev-09-stop-button` | [1.2.0](prompts/development/dev-09-stop-button/1.2.0.toml) | 2026-10-09 | Light edit of the 1.1.0 rewrite: tightened the wording; a cancelled queued job must never start. |
 | `dev-09-stop-button` | [1.1.0](prompts/development/dev-09-stop-button/1.1.0.toml) | 2026-10-08 | Rewritten professionally with the same intent: defines when the button appears, confirmation, how quickly it must stop, and what happens to completed work and queued jobs. |
 | `dev-09-stop-button` | [1.0.0](prompts/development/dev-09-stop-button/1.0.0.toml) | 2026-10-01 | Original request as written. |
 | `dev-10-remove-samples` | [1.1.0](prompts/development/dev-10-remove-samples/1.1.0.toml) | 2026-10-08 | Rewritten professionally with the same intent: includes updating documentation that refers to the samples. |
 | `dev-10-remove-samples` | [1.0.0](prompts/development/dev-10-remove-samples/1.0.0.toml) | 2026-10-07 | Original request as written. |
+| `dev-11-input-sources` | [1.1.0](prompts/development/dev-11-input-sources/1.1.0.toml) | 2026-10-09 | Professional rewrite with the same intent: one list of testable requirements in place of separate requirement and input-method lists, naming the per-file statuses, the failure rule and where the per-file report appears. |
 | `dev-11-input-sources` | [1.0.0](prompts/development/dev-11-input-sources/1.0.0.toml) | 2026-10-08 | Recorded as written: it was already a complete, implementation-ready specification. |
 | `dev-12-git-and-prompt-management` | [1.0.0](prompts/development/dev-12-git-and-prompt-management/1.0.0.toml) | 2026-10-08 | Recorded as written: it was already a complete, implementation-ready specification. |
 | `dev-13-publish-to-github` | [1.1.0](prompts/development/dev-13-publish-to-github/1.1.0.toml) | 2026-10-08 | Rewritten professionally with the same intent: adds the pre-push secret check, the visibility default, pushing tags, upstream tracking for later pushes, and what to report. |
 | `dev-13-publish-to-github` | [1.0.0](prompts/development/dev-13-publish-to-github/1.0.0.toml) | 2026-10-08 | Original request as written. The later request "push it to github" (2026-10-08) asked to publish new commits to the same repository; it is recorded here instead of as a duplicate prompt. |
 | `dev-14-prompt-history-update` | [1.1.0](prompts/development/dev-14-prompt-history-update/1.1.0.toml) | 2026-10-08 | Rewritten professionally with the same intent: defines which prompts count as reverted, how to number and de-duplicate new entries, and the validation to run. |
 | `dev-14-prompt-history-update` | [1.0.0](prompts/development/dev-14-prompt-history-update/1.0.0.toml) | 2026-10-08 | Original request as written. |
+| `dev-15-frd-template` | [1.1.0](prompts/development/dev-15-frd-template/1.1.0.toml) | 2026-10-09 | Professional condensed rewrite with the same intent: states it as a change to the generator, gives each of the 21 sections on one line with its fields and identifiers, groups the generation rules, and records that code, not the model, builds the structure. |
 | `dev-15-frd-template` | [1.0.0](prompts/development/dev-15-frd-template/1.0.0.toml) | 2026-10-08 | Recorded as written: it was already a complete, implementation-ready specification. |
+| `dev-16-ollama-fallback` | [1.2.0](prompts/development/dev-16-ollama-fallback/1.2.0.toml) | 2026-10-09 | Light edit of the 1.1.0 rewrite: adds a rejected API key as a trigger for switching to the local model, as implemented, and tightens the wording. |
 | `dev-16-ollama-fallback` | [1.1.0](prompts/development/dev-16-ollama-fallback/1.1.0.toml) | 2026-10-08 | Rewritten professionally with the same intent: defines when the fallback applies, the configuration, and how context limits, JSON output and cancellation must behave. |
 | `dev-16-ollama-fallback` | [1.0.0](prompts/development/dev-16-ollama-fallback/1.0.0.toml) | 2026-10-08 | Original request as written. |
 
 <!-- END GENERATED: prompt catalog -->
 
-## Git workflow
+## 18. License
 
-### Repository setup
+No license has been chosen yet, and the repository has no `LICENSE` file. Until one is added, the code is private and may not be copied, modified or redistributed without the maintainer's permission.
 
-The code is hosted at https://github.com/Ranjit1407/specforge (a private repository: ask the owner for access). Work happens on `main`, and each release is tagged (`v1.0.0` to `v2.1.0`, listed in [CHANGELOG.md](CHANGELOG.md)). After cloning, `origin` already points at GitHub, so publishing changes is:
+## 19. Contact
 
-```bash
-git push                 # commits on main
-git push origin --tags   # new release tags
-```
-
-### What is never committed
-
-`.gitignore` excludes secrets (`.env` and every `.env.*` except `.env.example`, key and credential files), the virtual environment, Python caches, run-time data (`.cache/`, `runs/`, `output/`, logs) and editor or OS files. `.gitattributes` stores text with LF line endings and treats Word and PDF files as binary.
-
-- Check that a file is ignored: `git check-ignore -v .env`
-- Review what you are about to commit: `git status` and `git diff --staged`
-- `python -m specforge.prompts check` also fails if a prompt file contains something that looks like an API key.
-- If a secret is ever committed, revoke and rotate it at the provider first. Removing it from history does not recall copies that were already pushed or cloned.
-
-### Branches
-
-- `main` is always runnable. Releases are tagged on it.
-- Do work on short-lived branches: `feature/<topic>`, `fix/<topic>`, `docs/<topic>`, or `prompt/<prompt-id>-v<version>` for prompt changes.
-- Merge back with a pull request, or locally with `git merge --no-ff <branch>`, after the checks in [Development and contribution guidelines](#development-and-contribution-guidelines) pass.
-
-### Commit messages
-
-- Make one logical change per commit, so it can be reviewed and reverted on its own.
-- Subject: an imperative summary of up to about 72 characters, for example `Accept files, folders and nested folders with per-file tracking`.
-- Body: what changed and why, wrapped at about 72 characters.
-- Prompt changes: start the subject with `prompt(<id>): v<version>`, for example `prompt(reviewer): v1.1.0 flag unmeasurable performance terms`, and commit the new prompt file together with the regenerated README.
-- Releases: `Release X.Y.Z`.
-
-### Versioning
-
-The application follows semantic versioning (MAJOR.MINOR.PATCH). The version lives in [specforge/__init__.py](specforge/__init__.py) and is shown by `python -m specforge --version`.
-
-- **MAJOR**: incompatible changes to CLI options, web API endpoints, the `frd.json` structure or configuration variables.
-- **MINOR**: new, backward-compatible functionality.
-- **PATCH**: backward-compatible bug fixes.
-
-Prompts have their own versions, described in [Changing a prompt](#changing-a-prompt).
-
-To make a release:
-
-```bash
-# 1. update __version__ in specforge/__init__.py and add a section to CHANGELOG.md
-git add specforge/__init__.py CHANGELOG.md
-git commit -m "Release 2.2.0"
-git tag -a v2.2.0 -m "SpecForge 2.2.0: <one-line summary>"
-git push origin main --tags
-```
-
-### Common commands
-
-| Task | Command |
-| --- | --- |
-| See what changed | `git status`, `git diff`, `git diff --staged` |
-| Stage and commit | `git add <files>`, then `git commit` |
-| History | `git log --oneline --decorate --graph` |
-| History of one prompt | `git log --oneline -- prompts/runtime/reviewer/` |
-| Start a branch | `git switch -c feature/<topic>` |
-| Switch branch | `git switch main` |
-| Merge a branch | `git switch main`, then `git merge --no-ff feature/<topic>` |
-| Update from the remote | `git pull --rebase` |
-| Publish a branch | `git push -u origin feature/<topic>` |
-| List and inspect releases | `git tag -n`, `git show v2.1.0` |
-| Compare two releases | `git diff v2.0.0 v2.1.0 --stat` |
-| Undo a commit safely | `git revert <commit>` (adds a new commit; history is kept) |
-| Set work aside | `git stash -u`, later `git stash pop` |
-
-## Development and contribution guidelines
-
-1. Set up the environment as in [Installation and setup](#installation-and-setup) and create a branch for your change.
-2. Follow the existing conventions:
-   - Python 3.11+ with type hints and the standard library first.
-   - Do not add a dependency without a clear need. When you do, add it to `requirements.txt` with a minimum version.
-   - Prompt text belongs only in `prompts/`. Code refers to prompts by id.
-   - Settings belong in `config.py` or `.env`. Credentials are never hardcoded.
-   - Messages shown to users are plain language, without stack traces, model names or raw API errors.
-   - The web UI stays a single static file with no build step. Keep dark mode and the narrow-screen layout working.
-3. Check your change before committing. There is no automated test suite yet, so use these:
-   - `python -m specforge.prompts check` validates prompts and the README catalog.
-   - `python -m specforge <folder-with-test-documents> --check` checks input collection and text extraction without calling the model.
-   - A real run on a small document set (`python -m specforge <docs> -o output/test`) exercises the agents. It uses free-tier requests, and replies are cached, so rerunning the same input is fast and free.
-   - For web UI changes, run `python -m specforge.web` and try the flow in a browser: upload, progress, Stop, result and downloads.
-4. Update the documentation in the same change: this README, `CHANGELOG.md` for user-visible changes, and `sync-readme` for prompt changes.
-5. Commit following [Commit messages](#commit-messages) and open a pull request that describes the change, how you checked it, and any prompt versions it introduces.
-
-## Free-tier limits and runtime notes
-
-OpenRouter free models allow 50 requests per day (1,000 per day once the account has $10 of credit). A typical run makes roughly `modules + 8` calls, about 12 to 20. When every model is rate-limited, the client uses the local Ollama model if one is configured, and otherwise backs off before giving up; retrying resumes from cached steps.
-
-The web server keeps jobs in memory. Uploaded files and results are stored under `runs/<job-id>/`, but the job list resets when the server restarts.
+**Maintainer:** [Ranjit1407](https://github.com/Ranjit1407)  
+**Repository:** https://github.com/Ranjit1407/specforge (private)  
+**Issues:** https://github.com/Ranjit1407/specforge/issues

@@ -1,0 +1,20 @@
+id = "dev-03-upload-frontend"
+version = "1.2.0"
+title = "Add a web frontend for uploading documents"
+kind = "development"
+status = "implemented"
+date = "2026-10-09"
+purpose = "Give users a browser interface to upload source documents and get the FRD."
+outcome = "Upload page served by FastAPI, with live progress and FRD preview and download."
+changes = "Light edit of the 1.1.0 rewrite: says the progress is live and tightens the wording."
+
+template = '''
+Add a browser-based frontend so users can generate an FRD without the command line.
+
+- Let users select or drag and drop source documents (PDF, Word, Markdown, plain text), validating type and size before upload.
+- Accept an optional project name.
+- Start generation on the server and show live progress while the agents run.
+- When the run completes, display the FRD and offer downloads as Word, Markdown and JSON.
+- Show clear, non-technical messages when an upload or a run fails.
+
+Reuse the existing pipeline on the server; the frontend must not duplicate any generation logic.'''

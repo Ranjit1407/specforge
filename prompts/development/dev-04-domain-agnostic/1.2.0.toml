@@ -1,0 +1,19 @@
+id = "dev-04-domain-agnostic"
+version = "1.2.0"
+title = "Make generation domain-agnostic"
+kind = "development"
+status = "implemented"
+date = "2026-10-09"
+purpose = "Make the system understand documents from any domain instead of one specific case."
+outcome = "Modules, roles and search queries are derived from the documents by the Scope Analyst; domain-specific assumptions were removed and the Document Reader and Coverage Sweep agents were added."
+changes = "Tightened the wording and turned the closing check into an explicit acceptance criterion: a coherent FRD for two unrelated domains without code changes."
+
+template = '''
+Make FRD generation work for source documents from any business domain.
+
+- Remove every domain-specific assumption from the code and prompts: module names, roles, terminology and example values.
+- Derive the project's modules, user roles and constraints from the documents, and generate each module's retrieval queries in the documents' own vocabulary.
+- Build an understanding of the whole document set before extracting requirements, so the FRD's structure reflects the system the documents describe.
+- Recover requirements that retrieval misses, for example by re-examining passages that no requirement cites.
+
+Acceptance: the generator produces a coherent FRD for document sets from at least two unrelated domains without code changes.'''

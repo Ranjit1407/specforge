@@ -1,0 +1,20 @@
+id = "dev-01-rag-agent-chain-design"
+version = "1.2.0"
+title = "Design a RAG agent chain that generates an FRD"
+kind = "development"
+status = "answered"
+date = "2026-10-09"
+purpose = "Ask for the architecture, tools and techniques for generating an FRD from input documents with a chain of agents and RAG."
+outcome = "Recommended a hybrid-retrieval, multi-agent design with grounding, citations, schema-validated outputs and a review step; this became SpecForge's architecture."
+changes = "Tightened the 1.1.0 rewrite: labelled the four deliverables (architecture, retrieval, accuracy techniques, tooling) and made the FRD contents an explicit requirement."
+
+template = '''
+Design a system that generates a Functional Requirements Document (FRD) from a set of source documents, using a chain of LLM agents with Retrieval-Augmented Generation (RAG).
+
+Provide:
+1. Architecture: the agents in the chain, the responsibility of each, and the data passed between them.
+2. Retrieval: how documents are parsed, chunked, indexed and searched so that each agent receives the relevant evidence.
+3. Accuracy techniques: grounding in the sources, citations to source passages, schema-validated structured output, and a review step that detects duplicates, conflicts and gaps.
+4. Tooling: the recommended tools and libraries for each part, with the reason for each choice.
+
+The FRD must contain the project context, functional requirements grouped by module with priorities and acceptance criteria, open questions, and traceability from every requirement to its source documents.'''
